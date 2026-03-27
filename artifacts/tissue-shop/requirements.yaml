@@ -1,0 +1,22 @@
+packages:
+  "framer-motion": "Smooth page transitions and micro-interactions"
+  "react-hook-form": "Form state management"
+  "@hookform/resolvers": "Zod validation for forms"
+  "clsx": "Utility for constructing className strings"
+  "tailwind-merge": "Utility for merging tailwind classes"
+
+images:
+  - path: "artifacts/tissue-shop/public/images/hero-bg.png"
+    description: "A beautiful, bright, soft-lit composition of premium stack of white facial tissue boxes on a pastel blue background, minimalist studio photography, highly detailed, soft focus"
+    aspect_ratio: "16:9"
+  - path: "artifacts/tissue-shop/public/images/logo.png"
+    description: "Minimalist clean flat logo mark for a tissue paper brand called SoftTouch, featuring a gentle folded soft paper sheet in light blue, solid white background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/tissue-shop/public/images/quality-texture.png"
+    description: "Macro photography of ultra-soft 3-ply facial tissue paper texture, gentle ripples, soft natural lighting, pure white"
+    aspect_ratio: "16:9"
+
+notes:
+  - "React Query hooks are wired to Firebase REST services in src/lib/firebase-hooks.ts"
+  - "Forms use react-hook-form with zod validation"
+  - "Using framer-motion for page transitions to give a premium feel"

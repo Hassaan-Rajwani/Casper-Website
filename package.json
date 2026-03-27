@@ -1,0 +1,22 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "workspaces": [
+    "artifacts/tissue-shop",
+    "artifacts/mockup-sandbox"
+  ],
+  "scripts": {
+    "preinstall": "node -e \"try{require('fs').unlinkSync('yarn.lock')}catch(e){if(e.code!=='ENOENT')throw e}\"",
+    "dev": "npm run -w @workspace/tissue-shop dev",
+    "dev:shop": "npm run -w @workspace/tissue-shop dev",
+    "build": "npm run typecheck && npm run -ws --if-present build",
+    "typecheck": "npm run -ws --if-present typecheck"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "typescript": "~5.9.2",
+    "prettier": "^3.8.1"
+  }
+}
