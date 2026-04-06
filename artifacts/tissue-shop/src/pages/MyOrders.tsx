@@ -8,6 +8,26 @@ import {
 } from "@/lib/firebase-hooks";
 import { Spinner } from "@/components/ui/spinner";
 
+function getOrderStatusBadgeClass(status: string) {
+  if (status === "cancelled") {
+    return "bg-red-100 text-red-700";
+  }
+
+  if (status === "delivered") {
+    return "bg-emerald-100 text-emerald-700";
+  }
+
+  if (status === "pending") {
+    return "bg-amber-100 text-amber-700";
+  }
+
+  if (status === "confirmed") {
+    return "bg-blue-100 text-blue-700";
+  }
+
+  return "bg-slate-100 text-slate-700";
+}
+
 export default function MyOrders() {
   const defaultContact = useMemo(() => getDefaultOrderContact(), []);
   const filters = useMemo(
@@ -86,7 +106,7 @@ export default function MyOrders() {
                   </p>
                 </div>
                 <div className="flex flex-col items-start md:items-end gap-2">
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full capitalize">
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full capitalize ${getOrderStatusBadgeClass(order.status)}`}>
                     {order.status}
                   </span>
                   <p className="text-lg font-bold text-foreground">Rs. {order.total.toFixed(0)}</p>

@@ -97,6 +97,20 @@ function normalizeOrderItem(item: Partial<OrderItem> | null | undefined): OrderI
   };
 }
 
+function normalizeOrderStatus(status: unknown) {
+  const normalized = String(status ?? "pending").trim().toLowerCase();
+
+  if (normalized === "canceled") {
+    return "cancelled";
+  }
+
+  if (["pending", "confirmed", "delivered", "cancelled"].includes(normalized)) {
+    return normalized;
+  }
+
+  return "pending";
+}
+
 function normalizeOrder(order: Partial<Order> & { id?: string }): Order {
   return {
     id: order.id?.trim() || `${Date.now()}`,
@@ -109,10 +123,19 @@ function normalizeOrder(order: Partial<Order> & { id?: string }): Order {
     postalCode: order.postalCode?.trim() || "",
     paymentMethod: order.paymentMethod?.trim() || "cod",
     total: toSafeNumber(order.total),
-    status: order.status?.trim() || "pending",
+    status: normalizeOrderStatus(order.status),
     createdAt: order.createdAt?.trim() || new Date(0).toISOString(),
     items: Array.isArray(order.items) ? order.items.map((item) => normalizeOrderItem(item)) : [],
   };
+}
+
+function isPlaceholderOrder(order: Order) {
+  return (
+    order.orderNumber === "N/A" &&
+    order.customerName === "Unknown customer" &&
+    order.total === 0 &&
+    order.items.length === 0
+  );
 }
 
 function getFirebaseAuthErrorMessage(code?: string) {
@@ -311,6 +334,10 @@ function saveFallbackCategories(categories: Category[]) {
 
 function getFallbackOrders() {
   return readJson<Order[]>(FALLBACK_ORDERS_KEY, []).map((order) => normalizeOrder(order));
+}
+
+function getMeaningfulFallbackOrders() {
+  return getFallbackOrders().filter((order) => !isPlaceholderOrder(order));
 }
 
 function saveFallbackOrders(orders: Order[]) {
@@ -913,7 +940,7 @@ export async function createOrder(form: CheckoutForm): Promise<Order> {
     postalCode: form.postalCode,
     paymentMethod: form.paymentMethod,
     total: cart.total,
-    status: "confirmed",
+    status: "pending",
     createdAt: new Date().toISOString(),
     items: cart.items.map((item) => ({
       productId: item.product.id,
@@ -958,7 +985,10 @@ function mergeOrders(...orderSets: Order[][]) {
   for (const orders of orderSets) {
     for (const order of orders) {
       const normalizedOrder = normalizeOrder(order);
-      const key = normalizedOrder.orderNumber || normalizedOrder.id;
+      const key =
+        normalizedOrder.orderNumber && normalizedOrder.orderNumber !== "N/A"
+          ? normalizedOrder.orderNumber
+          : normalizedOrder.id;
       const existing = merged.get(key);
 
       if (!existing || existing.createdAt < normalizedOrder.createdAt) {
@@ -1001,7 +1031,7 @@ export async function listCustomerOrders(filters?: {
   try {
     const orders = await listCollection<Order>("orders");
     const mappedOrders = orders.map((item) => normalizeOrder({ ...item.data, id: item.id }));
-    const mergedOrders = mergeOrders(mappedOrders, getFallbackOrders());
+    const mergedOrders = mergeOrders(mappedOrders, getMeaningfulFallbackOrders());
     saveFallbackOrders(mergedOrders);
     return filterOrdersByContact(mergedOrders, filters);
   } catch (error) {
@@ -1030,7 +1060,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<Order | nul
   try {
     const orders = await listCollection<Order>("orders");
     const mappedOrders = orders.map((item) => normalizeOrder({ ...item.data, id: item.id }));
-    const mergedOrders = mergeOrders(mappedOrders, getFallbackOrders());
+    const mergedOrders = mergeOrders(mappedOrders, getMeaningfulFallbackOrders());
     saveFallbackOrders(mergedOrders);
     return matchOrder(mergedOrders);
   } catch (error) {
@@ -1164,7 +1194,7 @@ export async function listAdminOrders(): Promise<Order[]> {
   try {
     const orders = await listCollection<Order>("orders", true);
     const mappedOrders = orders.map((item) => normalizeOrder({ ...item.data, id: item.id }));
-    const mergedOrders = mergeOrders(mappedOrders, getFallbackOrders());
+    const mergedOrders = mergeOrders(mappedOrders, getMeaningfulFallbackOrders());
     saveFallbackOrders(mergedOrders);
     return mergedOrders;
   } catch (error) {
@@ -1177,7 +1207,7 @@ export async function listAdminOrders(): Promise<Order[]> {
       try {
         const orders = await listCollection<Order>("orders");
         const mappedOrders = orders.map((item) => normalizeOrder({ ...item.data, id: item.id }));
-        const mergedOrders = mergeOrders(mappedOrders, getFallbackOrders());
+        const mergedOrders = mergeOrders(mappedOrders, getMeaningfulFallbackOrders());
         saveFallbackOrders(mergedOrders);
         return mergedOrders;
       } catch (fallbackReadError) {
@@ -1209,22 +1239,100 @@ export async function updateAdminOrderStatus(id: string, status: Order["status"]
     saveFallbackOrders(sortOrdersDescending(orders));
     return updatedOrder;
   };
+  const fallbackOrder = getFallbackOrders().find((order) => order.id === id) ?? null;
 
   if (!canUseFirestore()) {
     return updateFallbackOrder();
   }
 
   try {
-    await upsertCollectionDocument("orders", id, { status }, true);
-    const order = await getCollectionDocument<Order>("orders", id, true);
-    const updatedOrder = order ? { ...order, id } : null;
+    const firestoreOrder = await getCollectionDocument<Order>("orders", id, true);
+    const baseOrder = normalizeOrder({
+      ...(fallbackOrder ?? {}),
+      ...(firestoreOrder ?? {}),
+      id,
+    });
+    const updatedOrder = {
+      ...baseOrder,
+      status,
+    };
 
-    if (updatedOrder) {
-      saveOrderToFallback(updatedOrder);
-      return updatedOrder;
+    await upsertCollectionDocument(
+      "orders",
+      id,
+      updatedOrder as unknown as Record<string, unknown>,
+      true,
+    );
+
+    saveOrderToFallback(updatedOrder);
+    return updatedOrder;
+  } catch (error) {
+    if (shouldUseLocalFallback(error)) {
+      firestoreUnavailable = true;
+      return updateFallbackOrder();
     }
 
+    throw error;
+  }
+}
+
+export async function updateAdminOrder(
+  id: string,
+  data: Partial<
+    Pick<
+      Order,
+      | "orderNumber"
+      | "customerName"
+      | "customerEmail"
+      | "customerPhone"
+      | "address"
+      | "city"
+      | "postalCode"
+      | "paymentMethod"
+      | "total"
+      | "createdAt"
+    >
+  >,
+) {
+  const updateFallbackOrder = () => {
+    const orders = getFallbackOrders();
+    const index = orders.findIndex((order) => order.id === id);
+    if (index === -1) {
+      throw new Error("Order not found");
+    }
+
+    const updatedOrder = normalizeOrder({
+      ...orders[index],
+      ...data,
+      id,
+    });
+    orders[index] = updatedOrder;
+    saveFallbackOrders(sortOrdersDescending(orders));
+    return updatedOrder;
+  };
+  const fallbackOrder = getFallbackOrders().find((order) => order.id === id) ?? null;
+
+  if (!canUseFirestore()) {
     return updateFallbackOrder();
+  }
+
+  try {
+    const firestoreOrder = await getCollectionDocument<Order>("orders", id, true);
+    const updatedOrder = normalizeOrder({
+      ...(fallbackOrder ?? {}),
+      ...(firestoreOrder ?? {}),
+      ...data,
+      id,
+    });
+
+    await upsertCollectionDocument(
+      "orders",
+      id,
+      updatedOrder as unknown as Record<string, unknown>,
+      true,
+    );
+    saveOrderToFallback(updatedOrder);
+    return updatedOrder;
   } catch (error) {
     if (shouldUseLocalFallback(error)) {
       firestoreUnavailable = true;

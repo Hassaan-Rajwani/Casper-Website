@@ -19,6 +19,7 @@ import {
   listAdminProducts,
   loginAdmin,
   logoutAdmin,
+  updateAdminOrder,
   updateAdminProduct,
   updateAdminOrderStatus,
 } from "@/lib/firebase-store";
@@ -46,11 +47,19 @@ function getOrderStatusBadgeClass(status: string) {
     return "bg-red-100 text-red-700";
   }
 
+  if (status === "delivered") {
+    return "bg-emerald-100 text-emerald-700";
+  }
+
   if (status === "pending") {
     return "bg-amber-100 text-amber-700";
   }
 
-  return "bg-green-100 text-green-700";
+  if (status === "confirmed") {
+    return "bg-blue-100 text-blue-700";
+  }
+
+  return "bg-slate-100 text-slate-700";
 }
 
 function AdminLogin({
@@ -183,6 +192,19 @@ const emptyForm = {
   isNew: false, isBestseller: false,
 };
 
+const emptyOrderRepairForm = {
+  orderNumber: "",
+  customerName: "",
+  customerEmail: "",
+  customerPhone: "",
+  address: "",
+  city: "",
+  postalCode: "",
+  paymentMethod: "cod",
+  total: "",
+  createdAt: "",
+};
+
 function formatCurrency(value: unknown) {
   const amount =
     typeof value === "number" && Number.isFinite(value)
@@ -199,11 +221,15 @@ export default function Admin() {
     () => sessionStorage.getItem(SESSION_KEY) === "true" || Boolean(getCurrentAdminUser()),
   );
   const [tab, setTab] = useState<"dashboard" | "products" | "categories" | "orders">("dashboard");
+  const [orderView, setOrderView] = useState<"all" | "active" | "completed" | "cancelled">("active");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [orderRepairForm, setOrderRepairForm] = useState(emptyOrderRepairForm);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isReadingImage, setIsReadingImage] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
@@ -320,6 +346,37 @@ export default function Admin() {
     onError: (error) =>
       toast({
         title: "Failed to cancel order",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      }),
+  });
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: ({ orderId, status }: { orderId: string; status: Order["status"] }) =>
+      updateAdminOrderStatus(orderId, status),
+    onSuccess: (_, variables) => {
+      toast({
+        title: variables.status === "delivered" ? "Order delivered" : "Order confirmed",
+      });
+      invalidate();
+    },
+    onError: (error) =>
+      toast({
+        title: "Failed to update order",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      }),
+  });
+  const updateOrderMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Order> }) => updateAdminOrder(id, data),
+    onSuccess: () => {
+      toast({ title: "Order details updated" });
+      invalidate();
+      setEditingOrderId(null);
+      setOrderRepairForm(emptyOrderRepairForm);
+    },
+    onError: (error) =>
+      toast({
+        title: "Failed to update order",
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       }),
@@ -455,12 +512,80 @@ export default function Admin() {
 
     setDeleteTarget({ type: "category", categoryId, categoryName, linkedProductsCount });
   };
+  const openOrderRepair = (order: Order) => {
+    setExpandedOrderId(order.id);
+    setEditingOrderId(order.id);
+    setOrderRepairForm({
+      orderNumber: order.orderNumber === "N/A" ? "" : order.orderNumber,
+      customerName: order.customerName === "Unknown customer" ? "" : order.customerName,
+      customerEmail: order.customerEmail,
+      customerPhone: order.customerPhone,
+      address: order.address,
+      city: order.city,
+      postalCode: order.postalCode,
+      paymentMethod: order.paymentMethod || "cod",
+      total: order.total > 0 ? String(order.total) : "",
+      createdAt:
+        order.createdAt && order.createdAt !== new Date(0).toISOString()
+          ? order.createdAt.slice(0, 16)
+          : "",
+    });
+  };
+  const handleOrderRepairSubmit = (orderId: string) => {
+    updateOrderMutation.mutate({
+      id: orderId,
+      data: {
+        orderNumber: orderRepairForm.orderNumber.trim() || "N/A",
+        customerName: orderRepairForm.customerName.trim() || "Unknown customer",
+        customerEmail: orderRepairForm.customerEmail.trim(),
+        customerPhone: orderRepairForm.customerPhone.trim(),
+        address: orderRepairForm.address.trim(),
+        city: orderRepairForm.city.trim(),
+        postalCode: orderRepairForm.postalCode.trim(),
+        paymentMethod: orderRepairForm.paymentMethod.trim() || "cod",
+        total: Number(orderRepairForm.total || 0),
+        createdAt: orderRepairForm.createdAt
+          ? new Date(orderRepairForm.createdAt).toISOString()
+          : new Date().toISOString(),
+      },
+    });
+  };
 
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.category.toLowerCase().includes(search.toLowerCase())
   );
   const visibleOrders = orders.filter((order) => order.status !== "cancelled");
+  const normalizedOrderSearch = orderSearch.trim().toLowerCase();
+  const filteredOrders = orders.filter((order) => {
+    if (orderView === "active" && !["pending", "confirmed"].includes(order.status)) {
+      return false;
+    }
+
+    if (orderView === "completed" && order.status !== "delivered") {
+      return false;
+    }
+
+    if (orderView === "cancelled" && order.status !== "cancelled") {
+      return false;
+    }
+
+    if (!normalizedOrderSearch) {
+      return orderView === "all" ? true : true;
+    }
+
+    return [
+      order.orderNumber,
+      order.customerName,
+      order.customerEmail,
+      order.customerPhone,
+      order.city,
+      order.status,
+      order.paymentMethod,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedOrderSearch));
+  });
   const visibleStats = {
     totalOrders: visibleOrders.length,
     totalRevenue:
@@ -761,8 +886,40 @@ export default function Admin() {
               <div className="flex flex-col gap-2 mb-6">
                 <h2 className="text-2xl font-bold text-foreground">Orders</h2>
                 <p className="text-sm text-muted-foreground">
-                  Expand any order row to review complete customer and product details.
+                  Keep active orders separate from completed ones, while still retaining full history.
                 </p>
+              </div>
+              <div className="mb-4 flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    value={orderSearch}
+                    onChange={e => setOrderSearch(e.target.value)}
+                    placeholder="Search by order #, customer, phone, city, status..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-primary text-sm"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: "active", label: "Active Orders" },
+                    { id: "completed", label: "Completed" },
+                    { id: "cancelled", label: "Cancelled" },
+                    { id: "all", label: "All Orders" },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setOrderView(item.id as typeof orderView)}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                        orderView === item.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background border border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="bg-card rounded-2xl border border-border overflow-hidden">
                 <table className="w-full text-sm">
@@ -778,7 +935,7 @@ export default function Admin() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
-                    {visibleOrders.map(order => {
+                    {filteredOrders.map(order => {
                       const isExpanded = expandedOrderId === order.id;
 
                       return (
@@ -813,11 +970,51 @@ export default function Admin() {
                             </td>
                             <td className="px-4 py-3 text-right">
                               <div className="flex items-center justify-end gap-2">
-                                {order.status !== "cancelled" ? (
+                                {order.status === "pending" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateOrderStatusMutation.mutate({
+                                        orderId: order.id,
+                                        status: "confirmed",
+                                      })
+                                    }
+                                    disabled={updateOrderStatusMutation.isPending || cancelOrderMutation.isPending}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors disabled:opacity-60"
+                                  >
+                                    {updateOrderStatusMutation.isPending &&
+                                    updateOrderStatusMutation.variables?.orderId === order.id &&
+                                    updateOrderStatusMutation.variables?.status === "confirmed" ? (
+                                      <Spinner className="w-4 h-4" />
+                                    ) : null}
+                                    Mark Confirmed
+                                  </button>
+                                ) : null}
+                                {order.status !== "cancelled" && order.status !== "delivered" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateOrderStatusMutation.mutate({
+                                        orderId: order.id,
+                                        status: "delivered",
+                                      })
+                                    }
+                                    disabled={updateOrderStatusMutation.isPending || cancelOrderMutation.isPending}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 transition-colors disabled:opacity-60"
+                                  >
+                                    {updateOrderStatusMutation.isPending &&
+                                    updateOrderStatusMutation.variables?.orderId === order.id &&
+                                    updateOrderStatusMutation.variables?.status === "delivered" ? (
+                                      <Spinner className="w-4 h-4" />
+                                    ) : null}
+                                    Mark Delivered
+                                  </button>
+                                ) : null}
+                                {order.status !== "cancelled" && order.status !== "delivered" ? (
                                   <button
                                     type="button"
                                     onClick={() => setOrderToCancel(order)}
-                                    disabled={cancelOrderMutation.isPending}
+                                    disabled={cancelOrderMutation.isPending || updateOrderStatusMutation.isPending}
                                     className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 transition-colors disabled:opacity-60"
                                   >
                                     {cancelOrderMutation.isPending && cancelOrderMutation.variables === order.id ? (
@@ -907,81 +1104,177 @@ export default function Admin() {
                                   </div>
 
                                   <div className="rounded-2xl border border-border bg-background p-4 space-y-4">
-                                    <div>
-                                      <h3 className="text-sm font-semibold text-foreground">
-                                        Customer Details
-                                      </h3>
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        {new Date(order.createdAt).toLocaleString()}
-                                      </p>
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div>
+                                        <h3 className="text-sm font-semibold text-foreground">
+                                          Customer Details
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          {new Date(order.createdAt).toLocaleString()}
+                                        </p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => openOrderRepair(order)}
+                                        className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                                      >
+                                        Edit Details
+                                      </button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      <div className="rounded-xl bg-muted/40 p-3">
-                                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                          Name
-                                        </p>
-                                        <p className="text-sm font-medium text-foreground mt-1">
-                                          {order.customerName}
-                                        </p>
+                                    {editingOrderId === order.id ? (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <input
+                                          value={orderRepairForm.orderNumber}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, orderNumber: e.target.value }))}
+                                          placeholder="Order number"
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <input
+                                          value={orderRepairForm.customerName}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, customerName: e.target.value }))}
+                                          placeholder="Customer name"
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <input
+                                          value={orderRepairForm.customerPhone}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, customerPhone: e.target.value }))}
+                                          placeholder="Phone number"
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <input
+                                          value={orderRepairForm.customerEmail}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, customerEmail: e.target.value }))}
+                                          placeholder="Email address"
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <input
+                                          value={orderRepairForm.city}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, city: e.target.value }))}
+                                          placeholder="City"
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <input
+                                          value={orderRepairForm.postalCode}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, postalCode: e.target.value }))}
+                                          placeholder="Postal code"
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <input
+                                          value={orderRepairForm.paymentMethod}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, paymentMethod: e.target.value }))}
+                                          placeholder="Payment method"
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <input
+                                          value={orderRepairForm.total}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, total: e.target.value }))}
+                                          placeholder="Order total"
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <input
+                                          type="datetime-local"
+                                          value={orderRepairForm.createdAt}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, createdAt: e.target.value }))}
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary sm:col-span-2"
+                                        />
+                                        <textarea
+                                          value={orderRepairForm.address}
+                                          onChange={(e) => setOrderRepairForm((current) => ({ ...current, address: e.target.value }))}
+                                          placeholder="Street address"
+                                          rows={3}
+                                          className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm focus:outline-none focus:border-primary sm:col-span-2"
+                                        />
+                                        <div className="sm:col-span-2 flex items-center justify-end gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingOrderId(null);
+                                              setOrderRepairForm(emptyOrderRepairForm);
+                                            }}
+                                            className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOrderRepairSubmit(order.id)}
+                                            disabled={updateOrderMutation.isPending}
+                                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60"
+                                          >
+                                            {updateOrderMutation.isPending ? <Spinner className="w-4 h-4" /> : null}
+                                            Save Details
+                                          </button>
+                                        </div>
                                       </div>
-                                      <div className="rounded-xl bg-muted/40 p-3">
-                                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                          Phone
-                                        </p>
-                                        <p className="text-sm font-medium text-foreground mt-1 break-all">
-                                          {order.customerPhone}
-                                        </p>
+                                    ) : (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="rounded-xl bg-muted/40 p-3">
+                                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            Name
+                                          </p>
+                                          <p className="text-sm font-medium text-foreground mt-1">
+                                            {order.customerName}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-xl bg-muted/40 p-3">
+                                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            Phone
+                                          </p>
+                                          <p className="text-sm font-medium text-foreground mt-1 break-all">
+                                            {order.customerPhone}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-xl bg-muted/40 p-3 sm:col-span-2">
+                                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            Email
+                                          </p>
+                                          <p className="text-sm font-medium text-foreground mt-1 break-all">
+                                            {order.customerEmail}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-xl bg-muted/40 p-3 sm:col-span-2">
+                                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            Street Address
+                                          </p>
+                                          <p className="text-sm font-medium text-foreground mt-1">
+                                            {order.address}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-xl bg-muted/40 p-3">
+                                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            City
+                                          </p>
+                                          <p className="text-sm font-medium text-foreground mt-1">
+                                            {order.city}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-xl bg-muted/40 p-3">
+                                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            ZIP / Postal Code
+                                          </p>
+                                          <p className="text-sm font-medium text-foreground mt-1">
+                                            {order.postalCode}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-xl bg-muted/40 p-3">
+                                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            Payment
+                                          </p>
+                                          <p className="text-sm font-medium text-foreground mt-1">
+                                            {order.paymentMethod === "cod" ? "Cash on Delivery" : "Card"}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-xl bg-muted/40 p-3">
+                                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            Order Total
+                                          </p>
+                                          <p className="text-sm font-semibold text-foreground mt-1">
+                                            Rs. {formatCurrency(order.total)}
+                                          </p>
+                                        </div>
                                       </div>
-                                      <div className="rounded-xl bg-muted/40 p-3 sm:col-span-2">
-                                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                          Email
-                                        </p>
-                                        <p className="text-sm font-medium text-foreground mt-1 break-all">
-                                          {order.customerEmail}
-                                        </p>
-                                      </div>
-                                      <div className="rounded-xl bg-muted/40 p-3 sm:col-span-2">
-                                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                          Street Address
-                                        </p>
-                                        <p className="text-sm font-medium text-foreground mt-1">
-                                          {order.address}
-                                        </p>
-                                      </div>
-                                      <div className="rounded-xl bg-muted/40 p-3">
-                                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                          City
-                                        </p>
-                                        <p className="text-sm font-medium text-foreground mt-1">
-                                          {order.city}
-                                        </p>
-                                      </div>
-                                      <div className="rounded-xl bg-muted/40 p-3">
-                                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                          ZIP / Postal Code
-                                        </p>
-                                        <p className="text-sm font-medium text-foreground mt-1">
-                                          {order.postalCode}
-                                        </p>
-                                      </div>
-                                      <div className="rounded-xl bg-muted/40 p-3">
-                                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                          Payment
-                                        </p>
-                                        <p className="text-sm font-medium text-foreground mt-1">
-                                          {order.paymentMethod === "cod" ? "Cash on Delivery" : "Card"}
-                                        </p>
-                                      </div>
-                                      <div className="rounded-xl bg-muted/40 p-3">
-                                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                          Order Total
-                                        </p>
-                                        <p className="text-sm font-semibold text-foreground mt-1">
-                                          Rs. {formatCurrency(order.total)}
-                                        </p>
-                                      </div>
-                                    </div>
+                                    )}
                                   </div>
                                 </div>
                               </td>
@@ -990,8 +1283,8 @@ export default function Admin() {
                         </Fragment>
                       );
                     })}
-                    {visibleOrders.length === 0 && (
-                      <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No orders yet.</td></tr>
+                    {filteredOrders.length === 0 && (
+                      <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No matching orders found.</td></tr>
                     )}
                   </tbody>
                 </table>

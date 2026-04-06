@@ -4,6 +4,26 @@ import { CheckCircle, Package, Phone, Mail, ArrowRight } from "lucide-react";
 import { useGetOrder } from "@/lib/firebase-hooks";
 import { Spinner } from "@/components/ui/spinner";
 
+function getOrderStatusBadgeClass(status: string) {
+  if (status === "cancelled") {
+    return "bg-red-100 text-red-700";
+  }
+
+  if (status === "delivered") {
+    return "bg-emerald-100 text-emerald-700";
+  }
+
+  if (status === "pending") {
+    return "bg-amber-100 text-amber-700";
+  }
+
+  if (status === "confirmed") {
+    return "bg-blue-100 text-blue-700";
+  }
+
+  return "bg-slate-100 text-slate-700";
+}
+
 export default function OrderConfirmation() {
   const [, params] = useRoute("/order-confirmation/:orderNumber");
   const orderNumber = params?.orderNumber || "N/A";
@@ -49,8 +69,8 @@ export default function OrderConfirmation() {
           
           <div className="flex justify-between items-center py-2 border-b border-border/50">
             <span className="text-muted-foreground text-sm">Status</span>
-            <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full capitalize">
-              {order?.status ?? "Confirmed"}
+            <span className={`text-xs font-bold px-3 py-1 rounded-full capitalize ${getOrderStatusBadgeClass(order?.status ?? "pending")}`}>
+              {order?.status ?? "pending"}
             </span>
           </div>
           
