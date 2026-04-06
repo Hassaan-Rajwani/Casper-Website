@@ -30,17 +30,23 @@ const FALLBACK_CATEGORIES_KEY = "softtouch_categories";
 const FALLBACK_DELETED_CATEGORY_IDS_KEY = "softtouch_deleted_category_ids";
 const LAST_ORDER_CONTACT_KEY = "softtouch_last_order_contact";
 const ADMIN_SESSION_KEY = "softtouch_firebase_admin_session";
-const FALLBACK_ADMIN_EMAIL = "admin@casper.com";
-const FALLBACK_ADMIN_PASSWORD = "Password@1";
 let firestoreUnavailable = false;
 
-const DEFAULT_CATEGORIES: Category[] = [
-  { id: "facial", name: "Facial Tissue", icon: "leaf" },
-  { id: "kitchen", name: "Kitchen Rolls", icon: "leaf" },
-  { id: "toilet", name: "Toilet Paper", icon: "leaf" },
-  { id: "napkins", name: "Table Napkins", icon: "leaf" },
-  { id: "pocket", name: "Pocket Tissue", icon: "leaf" },
-];
+const DEFAULT_CATEGORIES: Category[] = (() => {
+  const raw = import.meta.env.VITE_DEFAULT_CATEGORIES_JSON;
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Array<Partial<Category>>;
+    return parsed
+      .map((category) => normalizeCategoryRecord(category))
+      .filter((category): category is Category => Boolean(category));
+  } catch {
+    return [];
+  }
+})();
 
 type CartProductSnapshot = Pick<
   Product,
@@ -114,8 +120,8 @@ function normalizeOrderStatus(status: unknown) {
 function normalizeOrder(order: Partial<Order> & { id?: string }): Order {
   return {
     id: order.id?.trim() || `${Date.now()}`,
-    orderNumber: order.orderNumber?.trim() || "N/A",
-    customerName: order.customerName?.trim() || "Unknown customer",
+    orderNumber: order.orderNumber?.trim() || "",
+    customerName: order.customerName?.trim() || "",
     customerEmail: order.customerEmail?.trim() || "",
     customerPhone: order.customerPhone?.trim() || "",
     address: order.address?.trim() || "",
@@ -124,15 +130,15 @@ function normalizeOrder(order: Partial<Order> & { id?: string }): Order {
     paymentMethod: order.paymentMethod?.trim() || "cod",
     total: toSafeNumber(order.total),
     status: normalizeOrderStatus(order.status),
-    createdAt: order.createdAt?.trim() || new Date(0).toISOString(),
+    createdAt: order.createdAt?.trim() || new Date().toISOString(),
     items: Array.isArray(order.items) ? order.items.map((item) => normalizeOrderItem(item)) : [],
   };
 }
 
 function isPlaceholderOrder(order: Order) {
   return (
-    order.orderNumber === "N/A" &&
-    order.customerName === "Unknown customer" &&
+    !order.orderNumber &&
+    !order.customerName &&
     order.total === 0 &&
     order.items.length === 0
   );
@@ -986,7 +992,7 @@ function mergeOrders(...orderSets: Order[][]) {
     for (const order of orders) {
       const normalizedOrder = normalizeOrder(order);
       const key =
-        normalizedOrder.orderNumber && normalizedOrder.orderNumber !== "N/A"
+        normalizedOrder.orderNumber
           ? normalizedOrder.orderNumber
           : normalizedOrder.id;
       const existing = merged.get(key);
@@ -1447,11 +1453,16 @@ export async function deleteAdminProduct(id: number) {
 
 export async function loginAdmin(email: string, password: string) {
   if (!isFirebaseConfigured || !firebaseAuthUrl) {
-    const fallbackEmail = import.meta.env.VITE_ADMIN_EMAIL || FALLBACK_ADMIN_EMAIL;
-    const fallbackPassword =
-      import.meta.env.VITE_ADMIN_PASSWORD || FALLBACK_ADMIN_PASSWORD;
+    const configuredEmail = import.meta.env.VITE_ADMIN_EMAIL;
+    const configuredPassword = import.meta.env.VITE_ADMIN_PASSWORD;
 
-    if (email !== fallbackEmail || password !== fallbackPassword) {
+    if (!configuredEmail || !configuredPassword) {
+      throw new Error(
+        "Admin credentials are not configured. Set VITE_ADMIN_EMAIL and VITE_ADMIN_PASSWORD.",
+      );
+    }
+
+    if (email !== configuredEmail || password !== configuredPassword) {
       throw new Error("Invalid credentials");
     }
 

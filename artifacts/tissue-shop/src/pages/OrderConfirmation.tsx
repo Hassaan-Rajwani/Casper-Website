@@ -26,7 +26,7 @@ function getOrderStatusBadgeClass(status: string) {
 
 export default function OrderConfirmation() {
   const [, params] = useRoute("/order-confirmation/:orderNumber");
-  const orderNumber = params?.orderNumber || "N/A";
+  const orderNumber = params?.orderNumber || "";
   const { data: order, isLoading } = useGetOrder(orderNumber);
 
   return (
@@ -64,7 +64,7 @@ export default function OrderConfirmation() {
           <div className="space-y-4">
           <div className="flex justify-between items-center py-2 border-b border-border/50">
             <span className="text-muted-foreground text-sm">Order Number</span>
-            <span className="font-bold text-foreground text-primary">{orderNumber}</span>
+            <span className="font-bold text-foreground text-primary">{orderNumber || "Unavailable"}</span>
           </div>
           
           <div className="flex justify-between items-center py-2 border-b border-border/50">

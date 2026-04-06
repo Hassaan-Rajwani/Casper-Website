@@ -398,7 +398,7 @@ export default function Admin() {
   };
 
   const adminIdentity =
-    getCurrentAdminUser()?.email || import.meta.env.VITE_ADMIN_EMAIL || "Firebase Admin";
+    getCurrentAdminUser()?.email || import.meta.env.VITE_ADMIN_EMAIL || "Admin";
 
   if (!isLoggedIn) {
     return <AdminLogin onLogin={handleAdminLogin} onExitToStore={handleExitToStore} />;
@@ -516,8 +516,8 @@ export default function Admin() {
     setExpandedOrderId(order.id);
     setEditingOrderId(order.id);
     setOrderRepairForm({
-      orderNumber: order.orderNumber === "N/A" ? "" : order.orderNumber,
-      customerName: order.customerName === "Unknown customer" ? "" : order.customerName,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
       customerEmail: order.customerEmail,
       customerPhone: order.customerPhone,
       address: order.address,
@@ -535,8 +535,8 @@ export default function Admin() {
     updateOrderMutation.mutate({
       id: orderId,
       data: {
-        orderNumber: orderRepairForm.orderNumber.trim() || "N/A",
-        customerName: orderRepairForm.customerName.trim() || "Unknown customer",
+        orderNumber: orderRepairForm.orderNumber.trim(),
+        customerName: orderRepairForm.customerName.trim(),
         customerEmail: orderRepairForm.customerEmail.trim(),
         customerPhone: orderRepairForm.customerPhone.trim(),
         address: orderRepairForm.address.trim(),
