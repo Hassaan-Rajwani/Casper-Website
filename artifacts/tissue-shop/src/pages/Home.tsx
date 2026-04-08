@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Leaf, ShieldCheck, Truck, Droplets, ArrowRight } from "lucide-react";
+import { Leaf, ShieldCheck, Truck, Droplets, ArrowRight, FileText, Phone, MapPin } from "lucide-react";
 import { useListProducts, useListCategories } from "@/lib/firebase-hooks";
 import { ProductCard } from "@/components/ui/ProductCard";
 
@@ -141,6 +141,67 @@ export default function Home() {
               className="w-full h-full object-cover object-center"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-foreground to-transparent hidden md:block"></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Store Policies and Contact */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-3xl border border-border/60 bg-card p-8 shadow-sm md:p-10">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-display font-bold text-foreground">Policies You Can Review Anytime</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Transparent information for payments, delivery, privacy, and customer care.</p>
+              </div>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              {[
+                "Privacy Policy",
+                "Return & Refund Policy",
+                "Shipping & Service Policy",
+                "Terms & Conditions",
+              ].map((item) => (
+                <div key={item} className="rounded-2xl border border-border/50 bg-muted/30 px-5 py-4 text-sm font-medium text-foreground">
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            <Link
+              href="/policies"
+              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground transition-transform duration-200 hover:-translate-y-0.5"
+            >
+              View Full Policies <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="rounded-3xl border border-border/60 bg-muted/20 p-8 shadow-sm md:p-10">
+            <h2 className="text-2xl font-display font-bold text-foreground">Local Office & Contact</h2>
+            <div className="mt-6 space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Phone className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">03128513901</p>
+                  <p className="text-sm text-muted-foreground">caspertissue@gmail.com</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Gulshan-e-Iqbal Block 3</p>
+                  <p className="text-sm text-muted-foreground">Karachi, Pakistan, near Patel Hospital</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

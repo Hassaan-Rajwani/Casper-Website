@@ -158,7 +158,7 @@ export default function OrderConfirmation() {
         <div className="space-y-2">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <Phone className="w-4 h-4 text-primary flex-shrink-0" />
-            <span>0311-1234567 (Mon-Sat, 9am-6pm)</span>
+            <span>03128513901 (Mon-Sat, 9am-6pm)</span>
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <Mail className="w-4 h-4 text-primary flex-shrink-0" />

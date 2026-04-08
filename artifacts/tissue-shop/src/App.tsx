@@ -12,6 +12,7 @@ import Checkout from "@/pages/Checkout";
 import OrderConfirmation from "@/pages/OrderConfirmation";
 import MyOrders from "@/pages/MyOrders";
 import Admin from "@/pages/Admin";
+import Policies from "@/pages/Policies";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -38,6 +39,7 @@ function Router() {
               <Route path="/cart" component={Cart} />
               <Route path="/checkout" component={Checkout} />
               <Route path="/my-orders" component={MyOrders} />
+              <Route path="/policies" component={Policies} />
               <Route path="/order-confirmation/:orderNumber" component={OrderConfirmation} />
               <Route component={NotFound} />
             </Switch>
