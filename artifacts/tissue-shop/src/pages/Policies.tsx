@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, RotateCcw, Truck, FileText, Phone, MapPin, Clock3 } from "lucide-react";
 
@@ -78,6 +79,28 @@ const contactCards = [
 ];
 
 export default function Policies() {
+  useEffect(() => {
+    const scrollToHashSection = () => {
+      const hash = window.location.hash.replace("#", "").trim();
+      if (!hash) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+
+      const section = document.getElementById(hash);
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+
+    scrollToHashSection();
+    window.addEventListener("hashchange", scrollToHashSection);
+
+    return () => {
+      window.removeEventListener("hashchange", scrollToHashSection);
+    };
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

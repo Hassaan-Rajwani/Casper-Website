@@ -162,15 +162,15 @@ export default function OrderConfirmation() {
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <Mail className="w-4 h-4 text-primary flex-shrink-0" />
-            <span>support@softtouch.pk</span>
+            <span>caspertissue@gmail.com</span>
           </div>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link href="/my-orders">
+        <Link href={`/my-orders?orderNumber=${encodeURIComponent(orderNumber)}`}>
           <a className="flex items-center justify-center gap-2 bg-muted text-foreground px-6 py-3 rounded-xl font-semibold hover:bg-muted/80 transition-colors">
-            View My Orders
+            Track This Order
           </a>
         </Link>
         <Link href="/products">

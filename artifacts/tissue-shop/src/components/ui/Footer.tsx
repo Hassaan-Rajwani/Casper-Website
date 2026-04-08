@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Leaf, Phone, Mail, MapPin, Facebook, Instagram } from "lucide-react";
+import { Leaf, Phone, Mail, MapPin } from "lucide-react";
 
 export function Footer() {
   return (
@@ -20,14 +20,6 @@ export function Footer() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               Pakistan's trusted tissue paper brand, delivering soft, durable, and eco-friendly products to households nationwide.
             </p>
-            <div className="flex items-center gap-3">
-              <a href="#" className="w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors">
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors">
-                <Instagram className="w-4 h-4" />
-              </a>
-            </div>
           </div>
 
           {/* Quick Links */}
@@ -37,15 +29,21 @@ export function Footer() {
               {[
                 { href: "/", label: "Home" },
                 { href: "/products", label: "All Products" },
-                { href: "/policies", label: "Policies & Terms" },
+                { href: `${import.meta.env.BASE_URL}policies`, label: "Policies & Terms", native: true },
                 { href: "/products?category=facial", label: "Facial Tissue" },
                 { href: "/products?category=kitchen", label: "Kitchen Roll" },
                 { href: "/cart", label: "My Cart" },
               ].map(link => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                    {link.label}
-                  </Link>
+                  {"native" in link && link.native ? (
+                    <a href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -56,16 +54,22 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-4">Categories</h3>
             <ul className="space-y-2">
               {[
-                { href: "/policies#privacy", label: "Privacy Policy" },
-                { href: "/policies#returns", label: "Return & Refund" },
-                { href: "/policies#shipping", label: "Shipping & Service" },
-                { href: "/policies#terms", label: "Terms & Conditions" },
+                { href: `${import.meta.env.BASE_URL}policies#privacy`, label: "Privacy Policy" },
+                { href: `${import.meta.env.BASE_URL}policies#returns`, label: "Return & Refund" },
+                { href: `${import.meta.env.BASE_URL}policies#shipping`, label: "Shipping & Service" },
+                { href: `${import.meta.env.BASE_URL}policies#terms`, label: "Terms & Conditions" },
                 { href: "/products", label: "Product Catalog" },
               ].map(link => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                    {link.label}
-                  </Link>
+                  {link.href.startsWith(`${import.meta.env.BASE_URL}policies#`) ? (
+                    <a href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -96,10 +100,10 @@ export function Footer() {
             © 2026 Casper. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            <Link href="/policies#privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
-            <Link href="/policies#returns" className="text-xs text-muted-foreground hover:text-primary transition-colors">Refund Policy</Link>
-            <Link href="/policies#shipping" className="text-xs text-muted-foreground hover:text-primary transition-colors">Shipping Policy</Link>
-            <Link href="/policies#terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</Link>
+            <a href={`${import.meta.env.BASE_URL}policies#privacy`} className="text-xs text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a>
+            <a href={`${import.meta.env.BASE_URL}policies#returns`} className="text-xs text-muted-foreground hover:text-primary transition-colors">Refund Policy</a>
+            <a href={`${import.meta.env.BASE_URL}policies#shipping`} className="text-xs text-muted-foreground hover:text-primary transition-colors">Shipping Policy</a>
+            <a href={`${import.meta.env.BASE_URL}policies#terms`} className="text-xs text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</a>
           </div>
         </div>
       </div>
