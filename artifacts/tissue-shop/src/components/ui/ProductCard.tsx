@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function ProductCard({ product }: { product: Product }) {
   const { toast } = useToast();
@@ -60,6 +61,9 @@ export function ProductCard({ product }: { product: Product }) {
       className="group bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col h-full"
     >
       <Link href={`/products/${product.id}`} className="relative block overflow-hidden aspect-square bg-muted/30">
+        <div className="absolute left-4 bottom-4 z-10 rounded-xl bg-background/95 p-1.5 shadow-md">
+          <BrandLogo imageClassName="h-8" />
+        </div>
         {product.isNew && (
           <span className="absolute top-4 left-4 bg-accent text-accent-foreground text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm">
             NEW

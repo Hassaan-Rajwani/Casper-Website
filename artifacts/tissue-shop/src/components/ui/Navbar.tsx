@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Menu, X, Leaf } from "lucide-react";
+import { ShoppingCart, Menu, X } from "lucide-react";
 import { useGetCart } from "@/lib/firebase-hooks";
 import { motion, AnimatePresence } from "framer-motion";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -25,12 +26,10 @@ export function Navbar() {
           
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-              <Leaf className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg text-foreground tracking-tight">
-              Casper
-            </span>
+            <BrandLogo
+              className="group-hover:scale-[1.02] transition-transform"
+              imageClassName="h-11 sm:h-12"
+            />
           </Link>
 
           {/* Desktop Nav */}

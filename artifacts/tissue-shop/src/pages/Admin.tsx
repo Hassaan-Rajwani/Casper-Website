@@ -2,7 +2,7 @@ import { Fragment, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard, Package, ShoppingBag, Plus, Pencil, Trash2, 
+  Package, ShoppingBag, Plus, Pencil, Trash2, 
   X, Save, TrendingUp, AlertCircle, Search, ChevronDown, ChevronUp,
   Leaf, Eye, EyeOff, LogOut, Lock, Upload
 } from "lucide-react";
@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 const SESSION_KEY = "softtouch_admin_auth";
 
@@ -102,8 +103,8 @@ function AdminLogin({
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
-            <Leaf className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto mb-4 inline-flex rounded-3xl border border-border/60 bg-background/95 px-5 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+            <BrandLogo imageClassName="h-20 drop-shadow-[0_4px_10px_rgba(15,23,42,0.08)]" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Admin Login</h1>
           <p className="text-muted-foreground text-sm mt-1">Casper Management Panel</p>
@@ -599,9 +600,7 @@ export default function Admin() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <LayoutDashboard className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <BrandLogo imageClassName="h-12" />
           <div>
             <h1 className="font-bold text-foreground">Admin Panel</h1>
             <p className="text-xs text-muted-foreground">Casper Management</p>

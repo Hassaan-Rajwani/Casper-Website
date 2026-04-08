@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { Leaf, Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function Footer() {
   return (
@@ -10,12 +11,7 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
-                <Leaf className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-bold text-lg text-foreground tracking-tight">
-                Casper
-              </span>
+              <BrandLogo imageClassName="h-14" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Pakistan's trusted tissue paper brand, delivering soft, durable, and eco-friendly products to households nationwide.

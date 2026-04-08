@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Leaf, ShieldCheck, Truck, Droplets, ArrowRight, FileText, Phone, MapPin } from "lucide-react";
 import { useListProducts, useListCategories } from "@/lib/firebase-hooks";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export default function Home() {
   const { data: products } = useListProducts();
@@ -12,9 +13,9 @@ export default function Home() {
   const featuredProducts = products?.filter(p => p.isBestseller).slice(0, 4) || products?.slice(0, 4) || [];
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="pb-24"
     >
@@ -22,29 +23,32 @@ export default function Home() {
       <section className="px-4 sm:px-6 lg:px-8 pt-6 pb-12">
         <div className="relative w-full max-w-7xl mx-auto rounded-3xl overflow-hidden bg-background shadow-xl shadow-primary/5 border border-border/50 min-h-[600px] flex items-center">
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent z-10 w-2/3" />
-          <img 
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`} 
-            className="absolute inset-0 w-full h-full object-cover object-right" 
-            alt="Premium Tissue Paper Background" 
+          <img
+            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+            className="absolute inset-0 w-full h-full object-cover object-center md:object-contain md:object-right"
+            alt="Premium Tissue Paper Background"
           />
-          
+
           <div className="relative z-20 p-8 md:p-16 lg:p-24 max-w-2xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.6 }}
             >
-              <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-bold tracking-wide mb-6">
+              <div className="mb-6 inline-flex rounded-2xl border border-border/60 bg-background/85 p-3 shadow-lg backdrop-blur-sm">
+                <BrandLogo imageClassName="h-14 md:h-16" />
+              </div>
+              <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-bold tracking-wide mb-6 md:ml-4 md:align-middle">
                 Premium Collection 2025
               </span>
               <h1 className="text-5xl md:text-7xl font-display font-extrabold text-foreground leading-[1.1] tracking-tight">
-                Experience the <br/>
+                Experience the <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">Softest</span> Touch.
               </h1>
               <p className="mt-6 text-lg md:text-xl text-muted-foreground leading-relaxed max-w-lg">
                 Elevate your everyday moments with our ultra-soft, 3-ply facial tissues. Crafted for gentle care and ultimate comfort.
               </p>
-              
+
               <div className="mt-10 flex flex-wrap gap-4">
                 <Link href="/products" className="px-8 py-4 rounded-xl font-semibold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
                   Shop Now
@@ -68,13 +72,13 @@ export default function Home() {
               { icon: ShieldCheck, title: "Hypoallergenic", desc: "Dermatologically tested for sensitive skin" },
               { icon: Truck, title: "Fast Delivery", desc: "Free shipping on orders over $50" },
             ].map((feature, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="flex items-start gap-4 p-6 bg-card rounded-2xl shadow-sm border border-border/50"
+                className="relative flex items-start gap-4 p-6 bg-card rounded-2xl shadow-sm border border-border/50 overflow-hidden"
               >
                 <div className="bg-primary/10 p-3 rounded-xl">
                   <feature.icon className="w-6 h-6 text-primary" />
@@ -114,7 +118,7 @@ export default function Home() {
             </div>
           )}
         </div>
-        
+
         <div className="mt-8 text-center sm:hidden">
           <Link href="/products" className="inline-flex items-center gap-2 font-semibold text-primary hover:text-primary/80 transition-colors">
             View All <ArrowRight className="w-4 h-4" />
@@ -126,6 +130,9 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="rounded-3xl overflow-hidden relative bg-foreground text-background flex flex-col md:flex-row items-center">
           <div className="p-10 md:p-16 lg:p-20 md:w-1/2 relative z-10">
+            <div className="mb-6 inline-flex rounded-2xl border border-background/20 bg-background/95 p-3 shadow-lg">
+              <BrandLogo imageClassName="h-14" />
+            </div>
             <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">The Difference is in the Details.</h2>
             <p className="text-background/80 text-lg leading-relaxed mb-8">
               Every Casper tissue goes through a rigorous quality check to ensure you get the plush, lint-free experience you deserve. Because your skin shouldn't settle for less.
@@ -135,9 +142,9 @@ export default function Home() {
             </Link>
           </div>
           <div className="md:w-1/2 w-full h-64 md:h-auto absolute right-0 inset-y-0 opacity-40 md:opacity-100 mix-blend-overlay md:mix-blend-normal">
-            <img 
-              src={`${import.meta.env.BASE_URL}images/quality-texture.png`} 
-              alt="Tissue Texture" 
+            <img
+              src={`${import.meta.env.BASE_URL}images/quality-texture.png`}
+              alt="Tissue Texture"
               className="w-full h-full object-cover object-center"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-foreground to-transparent hidden md:block"></div>
