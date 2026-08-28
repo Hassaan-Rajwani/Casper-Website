@@ -64,6 +64,18 @@ export interface Order {
   items: OrderItem[];
 }
 
+export interface Review {
+  id: string;
+  productId: number;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
 export interface AdminStats {
   totalProducts: number;
   totalOrders: number;

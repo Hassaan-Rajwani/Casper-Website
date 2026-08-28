@@ -70,7 +70,7 @@ export default function Home() {
               { icon: Leaf, title: "100% Virgin Pulp", desc: "Made from sustainably sourced materials" },
               { icon: Droplets, title: "Ultra Soft & Thick", desc: "Premium 3-ply thickness for extra care" },
               { icon: ShieldCheck, title: "Hypoallergenic", desc: "Dermatologically tested for sensitive skin" },
-              { icon: Truck, title: "Fast Delivery", desc: "Free shipping on orders over $50" },
+              { icon: Truck, title: "Fast Delivery", desc: "Free shipping on all orders" },
             ].map((feature, i) => (
               <motion.div
                 key={i}

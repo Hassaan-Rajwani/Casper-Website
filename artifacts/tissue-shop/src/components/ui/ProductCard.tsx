@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Star, ShoppingCart } from "lucide-react";
-import { type Product, useAddToCart, getGetCartQueryKey } from "@/lib/firebase-hooks";
+import { type Product, useAddToCart, useListProductReviews, getGetCartQueryKey } from "@/lib/firebase-hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -11,6 +11,12 @@ export function ProductCard({ product }: { product: Product }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
+
+  const { data: reviews = [] } = useListProductReviews(product.id);
+  const displayRating = reviews.length > 0
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    : product.rating;
+  const displayReviewCount = reviews.length > 0 ? reviews.length : product.reviewCount;
 
   const addToCartMutation = useAddToCart({
     mutation: {
@@ -84,8 +90,8 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="p-5 flex flex-col flex-1">
         <div className="flex items-center gap-1 mb-2 text-amber-400">
           <Star className="w-4 h-4 fill-current" />
-          <span className="text-sm font-medium text-foreground">{product.rating}</span>
-          <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
+          <span className="text-sm font-medium text-foreground">{displayRating.toFixed(1)}</span>
+          <span className="text-xs text-muted-foreground">({displayReviewCount})</span>
         </div>
         
         <Link href={`/products/${product.id}`}>
@@ -99,11 +105,11 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-border/50">
           <div className="flex flex-col">
             <span className="font-bold text-xl text-foreground">
-              ${product.price.toFixed(2)}
+              Rs. {product.price.toFixed(0)}
             </span>
             {product.originalPrice && (
               <span className="text-xs text-muted-foreground line-through">
-                ${product.originalPrice.toFixed(2)}
+                Rs. {product.originalPrice.toFixed(0)}
               </span>
             )}
           </div>

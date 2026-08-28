@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
-import { ShoppingBag, CreditCard, Banknote, ChevronRight } from "lucide-react";
+import { ShoppingBag, Banknote, ChevronRight } from "lucide-react";
 import {
   useGetCart,
   useCreateOrder,
@@ -19,7 +19,7 @@ interface CheckoutForm {
   address: string;
   city: string;
   postalCode: string;
-  paymentMethod: "cod" | "card";
+  paymentMethod: "cod";
 }
 
 export default function Checkout() {
@@ -175,8 +175,8 @@ export default function Checkout() {
           {/* Payment Method */}
           <div className="bg-card rounded-2xl border border-border p-6">
             <h2 className="text-xl font-semibold text-foreground mb-5">Payment Method</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
+            <div className="grid grid-cols-1 gap-4">
+
               <label className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${isSubmitting ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
                 <input type="radio" value="cod" {...register("paymentMethod")} className="hidden" disabled={isSubmitting} />
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "cod" ? "border-primary" : "border-muted-foreground"}`}>
@@ -187,20 +187,6 @@ export default function Checkout() {
                   <div>
                     <p className="font-semibold text-foreground text-sm">Cash on Delivery</p>
                     <p className="text-xs text-muted-foreground">Pay when delivered</p>
-                  </div>
-                </div>
-              </label>
-
-              <label className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${isSubmitting ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
-                <input type="radio" value="card" {...register("paymentMethod")} className="hidden" disabled={isSubmitting} />
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "card" ? "border-primary" : "border-muted-foreground"}`}>
-                  {paymentMethod === "card" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                </div>
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-6 h-6 text-primary" />
-                  <div>
-                    <p className="font-semibold text-foreground text-sm">Credit / Debit Card</p>
-                    <p className="text-xs text-muted-foreground">Visa, Mastercard</p>
                   </div>
                 </div>
               </label>

@@ -11,6 +11,7 @@ import {
   type Order,
   type OrderItem,
   type Product,
+  type Review,
 } from "@/lib/store-types";
 
 type CartRecord = { productId: number; quantity: number };
@@ -25,6 +26,7 @@ type FirebaseSession = {
 const CART_SESSION_KEY = "softtouch_cart_session";
 const FALLBACK_CART_KEY = "softtouch_cart_items";
 const FALLBACK_ORDERS_KEY = "softtouch_orders";
+const FALLBACK_REVIEWS_KEY = "softtouch_reviews";
 const FALLBACK_PRODUCTS_KEY = "softtouch_products";
 const FALLBACK_CATEGORIES_KEY = "softtouch_categories";
 const FALLBACK_DELETED_CATEGORY_IDS_KEY = "softtouch_deleted_category_ids";
@@ -75,6 +77,16 @@ class CartError extends Error {
     super(message);
     this.name = "CartError";
     this.code = "ALREADY_IN_CART";
+  }
+}
+
+class ReviewError extends Error {
+  code: "ORDER_NOT_FOUND" | "CONTACT_MISMATCH" | "PRODUCT_NOT_IN_ORDER" | "NOT_DELIVERED" | "ALREADY_REVIEWED";
+
+  constructor(message: string, code: ReviewError["code"]) {
+    super(message);
+    this.name = "ReviewError";
+    this.code = code;
   }
 }
 
@@ -132,6 +144,20 @@ function normalizeOrder(order: Partial<Order> & { id?: string }): Order {
     status: normalizeOrderStatus(order.status),
     createdAt: order.createdAt?.trim() || new Date().toISOString(),
     items: Array.isArray(order.items) ? order.items.map((item) => normalizeOrderItem(item)) : [],
+  };
+}
+
+function normalizeReview(review: Partial<Review> & { id?: string }): Review {
+  return {
+    id: review.id?.trim() || `${Date.now()}`,
+    productId: toSafeNumber(review.productId),
+    orderNumber: review.orderNumber?.trim() || "",
+    customerName: review.customerName?.trim() || "Verified Buyer",
+    customerEmail: review.customerEmail?.trim() || "",
+    customerPhone: review.customerPhone?.trim() || "",
+    rating: Math.min(5, Math.max(1, Math.round(toSafeNumber(review.rating, 5)))),
+    comment: review.comment?.trim() || "",
+    createdAt: review.createdAt?.trim() || new Date().toISOString(),
   };
 }
 
@@ -361,6 +387,44 @@ function saveOrderToFallback(order: Order) {
     ...orders.filter((existing) => existing.id !== normalizedOrder.id),
   ];
   saveFallbackOrders(sortOrdersDescending(nextOrders));
+}
+
+function getFallbackReviews() {
+  return readJson<Review[]>(FALLBACK_REVIEWS_KEY, []).map((review) => normalizeReview(review));
+}
+
+function saveFallbackReviews(reviews: Review[]) {
+  writeJson(
+    FALLBACK_REVIEWS_KEY,
+    reviews.map((review) => normalizeReview(review)),
+  );
+}
+
+function saveReviewToFallback(review: Review) {
+  const reviews = getFallbackReviews();
+  const normalizedReview = normalizeReview(review);
+  const nextReviews = [
+    normalizedReview,
+    ...reviews.filter((existing) => existing.id !== normalizedReview.id),
+  ];
+  saveFallbackReviews(sortReviewsDescending(nextReviews));
+}
+
+function sortReviewsDescending(reviews: Review[]) {
+  return [...reviews].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+function mergeReviews(...reviewSets: Review[][]) {
+  const merged = new Map<string, Review>();
+
+  for (const reviews of reviewSets) {
+    for (const review of reviews) {
+      const normalizedReview = normalizeReview(review);
+      merged.set(normalizedReview.id, normalizedReview);
+    }
+  }
+
+  return sortReviewsDescending(Array.from(merged.values()));
 }
 
 function getLastOrderContact() {
@@ -1073,6 +1137,112 @@ export async function getOrderByNumber(orderNumber: string): Promise<Order | nul
     if (shouldUseLocalFallback(error)) {
       firestoreUnavailable = true;
       return matchOrder(getFallbackOrders());
+    }
+
+    throw error;
+  }
+}
+
+async function listAllReviews(): Promise<Review[]> {
+  if (!canUseFirestore()) {
+    return getFallbackReviews();
+  }
+
+  try {
+    const reviews = await listCollection<Review>("reviews");
+    const mappedReviews = reviews.map((item) => normalizeReview({ ...item.data, id: item.id }));
+    const mergedReviews = mergeReviews(mappedReviews, getFallbackReviews());
+    saveFallbackReviews(mergedReviews);
+    return mergedReviews;
+  } catch (error) {
+    if (shouldUseLocalFallback(error)) {
+      if (shouldMarkFirestoreUnavailable(error)) {
+        firestoreUnavailable = true;
+      }
+      return getFallbackReviews();
+    }
+
+    throw error;
+  }
+}
+
+export async function listProductReviews(productId: number): Promise<Review[]> {
+  const reviews = await listAllReviews();
+  return sortReviewsDescending(reviews.filter((review) => review.productId === productId));
+}
+
+export async function createProductReview(input: {
+  productId: number;
+  orderNumber: string;
+  contact: string;
+  rating: number;
+  comment: string;
+}): Promise<Review> {
+  const orderNumber = input.orderNumber.trim();
+  const contact = input.contact.trim().toLowerCase();
+
+  const order = await getOrderByNumber(orderNumber);
+  if (!order) {
+    throw new ReviewError("No order was found with that Order ID.", "ORDER_NOT_FOUND");
+  }
+
+  const matchesContact =
+    order.customerEmail.trim().toLowerCase() === contact ||
+    order.customerPhone.trim().toLowerCase() === contact;
+  if (!matchesContact) {
+    throw new ReviewError(
+      "Order found, but the phone number or email does not match this order.",
+      "CONTACT_MISMATCH",
+    );
+  }
+
+  const orderContainsProduct = order.items.some((item) => item.productId === input.productId);
+  if (!orderContainsProduct) {
+    throw new ReviewError("This product was not part of that order.", "PRODUCT_NOT_IN_ORDER");
+  }
+
+  if (order.status !== "delivered") {
+    throw new ReviewError(
+      "You can review this product once your order has been delivered.",
+      "NOT_DELIVERED",
+    );
+  }
+
+  const existingReviews = await listAllReviews();
+  const alreadyReviewed = existingReviews.some(
+    (review) => review.orderNumber === order.orderNumber && review.productId === input.productId,
+  );
+  if (alreadyReviewed) {
+    throw new ReviewError("You have already reviewed this product for this order.", "ALREADY_REVIEWED");
+  }
+
+  const review: Review = normalizeReview({
+    id: `${Date.now()}`,
+    productId: input.productId,
+    orderNumber: order.orderNumber,
+    customerName: order.customerName,
+    customerEmail: order.customerEmail,
+    customerPhone: order.customerPhone,
+    rating: input.rating,
+    comment: input.comment,
+    createdAt: new Date().toISOString(),
+  });
+
+  saveReviewToFallback(review);
+
+  if (!canUseFirestore()) {
+    return review;
+  }
+
+  try {
+    await upsertCollectionDocument("reviews", review.id, review as unknown as Record<string, unknown>);
+    return review;
+  } catch (error) {
+    if (shouldUseLocalFallback(error)) {
+      if (shouldMarkFirestoreUnavailable(error)) {
+        firestoreUnavailable = true;
+      }
+      return review;
     }
 
     throw error;

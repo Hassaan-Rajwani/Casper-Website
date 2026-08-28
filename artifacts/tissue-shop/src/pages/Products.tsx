@@ -38,7 +38,7 @@ export default function Products() {
   }, [initialCategory, initialSearch, initialSort]);
 
   const { data: allProducts = [], isLoading: loadingProducts, isFetching } = useListProducts();
-  
+
   const { data: categories } = useListCategories();
 
   const availableCategoryIds = useMemo(() => {
@@ -103,14 +103,14 @@ export default function Products() {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
     >
       <div className="flex flex-col md:flex-row gap-8">
-        
+
         {/* Sidebar */}
         <aside className="w-full md:w-64 shrink-0">
           <div className="sticky top-28 space-y-8">
@@ -118,8 +118,8 @@ export default function Products() {
               <h3 className="font-semibold text-lg text-foreground mb-4">Search</h3>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Find tissues..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -131,14 +131,14 @@ export default function Products() {
             <div>
               <h3 className="font-semibold text-lg text-foreground mb-4">Categories</h3>
               <div className="flex flex-col gap-2">
-                <button 
+                <button
                   onClick={() => setCategory("")}
                   className={`text-left px-4 py-2.5 rounded-lg text-sm transition-colors ${!effectiveCategory ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted"}`}
                 >
                   All Products
                 </button>
                 {categories?.map((cat) => (
-                  <button 
+                  <button
                     key={cat.id}
                     onClick={() => handleCategorySelect(cat.id)}
                     className={`text-left px-4 py-2.5 rounded-lg text-sm transition-colors ${effectiveCategory === cat.id ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted"}`}
@@ -148,11 +148,11 @@ export default function Products() {
                 ))}
               </div>
             </div>
-            
+
             {/* Promotional Banner in Sidebar */}
             <div className="bg-gradient-to-br from-primary/10 to-blue-400/10 border border-primary/20 rounded-2xl p-6 text-center">
               <h4 className="font-display font-bold text-primary text-lg mb-2">Free Shipping</h4>
-              <p className="text-sm text-muted-foreground mb-4">On all orders over $50!</p>
+              <p className="text-sm text-muted-foreground mb-4">On all orders</p>
               <Link href="/products" className="inline-block text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg w-full">
                 Shop Collection
               </Link>
@@ -202,7 +202,7 @@ export default function Products() {
 
           {loadingProducts ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1,2,3,4,5,6].map(i => (
+              {[1, 2, 3, 4, 5, 6].map(i => (
                 <div key={i} className="bg-muted animate-pulse rounded-2xl aspect-[3/4]"></div>
               ))}
             </div>

@@ -208,7 +208,7 @@ export default function Cart() {
                       <Link href={`/products/${item.product.id}`} className="font-semibold text-foreground hover:text-primary transition-colors line-clamp-2">
                         {item.product.name}
                       </Link>
-                      <div className="text-sm text-muted-foreground mt-1">${item.product.price.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground mt-1">Rs. {item.product.price.toFixed(0)}</div>
                       <button 
                         onClick={() => handleRemove(item.product.id)}
                         className="text-sm text-destructive hover:underline mt-2 flex items-center gap-1"
@@ -240,7 +240,7 @@ export default function Cart() {
                   </div>
 
                   <div className="col-span-6 sm:col-span-3 text-right font-bold text-foreground text-lg mt-4 sm:mt-0">
-                    ${(item.product.price * item.quantity).toFixed(2)}
+                    Rs. {(item.product.price * item.quantity).toFixed(0)}
                   </div>
                 </div>
               ))}
@@ -255,11 +255,11 @@ export default function Cart() {
             <div className="space-y-4 text-sm mb-6 pb-6 border-b border-border/50">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal ({cart.itemCount} items)</span>
-                <span className="font-medium text-foreground">${cart.total.toFixed(2)}</span>
+                <span className="font-medium text-foreground">Rs. {cart.total.toFixed(0)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Shipping</span>
-                <span className="font-medium text-foreground">{cart.total > 50 ? 'Free' : '$5.00'}</span>
+                <span className="font-medium text-foreground">{cart.total > 50 ? 'Free' : 'Rs. 5'}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Taxes</span>
@@ -270,7 +270,7 @@ export default function Cart() {
             <div className="flex justify-between items-center mb-8">
               <span className="text-base font-bold text-foreground">Estimated Total</span>
               <span className="text-3xl font-bold text-foreground">
-                ${(cart.total + (cart.total > 50 ? 0 : 5)).toFixed(2)}
+                Rs. {(cart.total + (cart.total > 50 ? 0 : 5)).toFixed(0)}
               </span>
             </div>
 

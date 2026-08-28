@@ -7,6 +7,7 @@ import {
   addToCart,
   clearCart,
   createOrder,
+  createProductReview,
   getSavedOrderContact,
   getCart,
   getOrderByNumber,
@@ -14,6 +15,7 @@ import {
   listCustomerOrders,
   listCategories,
   listProducts,
+  listProductReviews,
   removeFromCart,
   updateCartItem,
 } from "@/lib/firebase-store";
@@ -23,9 +25,10 @@ import type {
   CheckoutForm,
   Order,
   Product,
+  Review,
 } from "@/lib/store-types";
 
-export type { Cart, Category, CheckoutForm, Order, Product } from "@/lib/store-types";
+export type { Cart, Category, CheckoutForm, Order, Product, Review } from "@/lib/store-types";
 
 const queryKeys = {
   categories: ["categories"] as const,
@@ -36,6 +39,7 @@ const queryKeys = {
   cart: ["cart"] as const,
   customerOrders: (filters?: { email?: string; phone?: string }) =>
     ["customer-orders", filters?.email ?? "", filters?.phone ?? ""] as const,
+  productReviews: (productId: number) => ["product-reviews", productId] as const,
 };
 
 type MutationConfig<TData, TVariables> = {
@@ -140,4 +144,28 @@ export function useCreateOrder(
 
 export function getDefaultOrderContact() {
   return getSavedOrderContact();
+}
+
+export function useListProductReviews(productId: number) {
+  return useQuery({
+    queryKey: queryKeys.productReviews(productId),
+    queryFn: () => listProductReviews(productId),
+    enabled: productId > 0,
+  });
+}
+
+export function getProductReviewsQueryKey(productId: number) {
+  return queryKeys.productReviews(productId);
+}
+
+export function useCreateProductReview(
+  options?: MutationConfig<
+    Review,
+    { data: { productId: number; orderNumber: string; contact: string; rating: number; comment: string } }
+  >,
+) {
+  return useMutation({
+    mutationFn: ({ data }) => createProductReview(data),
+    ...options?.mutation,
+  });
 }

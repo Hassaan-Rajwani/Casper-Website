@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRoute } from "wouter";
 import { motion } from "framer-motion";
-import { Star, Truck, Shield, Minus, Plus, ShoppingCart } from "lucide-react";
-import { useGetProduct, useAddToCart, getGetCartQueryKey } from "@/lib/firebase-hooks";
+import { Star, Truck, Shield, Minus, Plus, ShoppingCart, ShieldCheck } from "lucide-react";
+import {
+  useGetProduct,
+  useAddToCart,
+  useListProductReviews,
+  useCreateProductReview,
+  getGetCartQueryKey,
+  getProductReviewsQueryKey,
+  getDefaultOrderContact,
+} from "@/lib/firebase-hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/spinner";
@@ -10,7 +18,7 @@ import { Spinner } from "@/components/ui/spinner";
 export default function ProductDetail() {
   const [match, params] = useRoute("/products/:id");
   const productId = match ? Number(params?.id) : 0;
-  
+
   const { data: product, isLoading, isFetching } = useGetProduct(productId);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
@@ -18,6 +26,64 @@ export default function ProductDetail() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const defaultContact = getDefaultOrderContact();
+  const { data: reviews = [], isLoading: isLoadingReviews } = useListProductReviews(productId);
+  const [reviewOrderNumber, setReviewOrderNumber] = useState("");
+  const [reviewContact, setReviewContact] = useState(
+    defaultContact?.phone || defaultContact?.email || "",
+  );
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+
+  const createReviewMutation = useCreateProductReview({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getProductReviewsQueryKey(productId) });
+        toast({
+          title: "Review submitted",
+          description: "Thanks for sharing your feedback!",
+        });
+        setReviewOrderNumber("");
+        setReviewComment("");
+        setReviewRating(5);
+      },
+      onError: (error) => {
+        toast({
+          title: "Could not submit review",
+          description: error.message || "Please check your details and try again.",
+          variant: "destructive",
+        });
+      },
+    },
+  });
+
+  const handleSubmitReview = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!reviewOrderNumber.trim() || !reviewContact.trim() || !reviewComment.trim()) {
+      toast({
+        title: "Missing details",
+        description: "Please fill in your order ID, contact, and review.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createReviewMutation.mutate({
+      data: {
+        productId,
+        orderNumber: reviewOrderNumber,
+        contact: reviewContact,
+        rating: reviewRating,
+        comment: reviewComment,
+      },
+    });
+  };
+
+  const displayRating = reviews.length > 0
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    : product?.rating ?? 0;
+  const displayReviewCount = reviews.length > 0 ? reviews.length : product?.reviewCount ?? 0;
   const addToCartMutation = useAddToCart({
     mutation: {
       onSuccess: (nextCart) => {
@@ -82,9 +148,9 @@ export default function ProductDetail() {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
     >
@@ -97,10 +163,10 @@ export default function ProductDetail() {
                 NEW
               </span>
             )}
-            <img 
-              src={product.imageUrl} 
-              alt={product.name} 
-              className="w-full h-full object-cover object-center mix-blend-multiply" 
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover object-center mix-blend-multiply"
             />
           </div>
         </div>
@@ -114,8 +180,8 @@ export default function ProductDetail() {
             {isFetching ? <Spinner className="w-4 h-4 text-muted-foreground ml-auto" /> : null}
             <div className="flex items-center gap-1 text-amber-400 ml-2">
               <Star className="w-4 h-4 fill-current" />
-              <span className="text-sm font-medium text-foreground">{product.rating}</span>
-              <span className="text-sm text-muted-foreground underline decoration-dotted">({product.reviewCount} reviews)</span>
+              <span className="text-sm font-medium text-foreground">{displayRating.toFixed(1)}</span>
+              <span className="text-sm text-muted-foreground underline decoration-dotted">({displayReviewCount} reviews)</span>
             </div>
           </div>
 
@@ -125,12 +191,12 @@ export default function ProductDetail() {
 
           <div className="flex items-end gap-4 mb-6 pb-6 border-b border-border/50">
             <span className="text-4xl font-bold text-foreground">
-              ${product.price.toFixed(2)}
+              Rs. {product.price.toFixed(0)}
             </span>
             {product.originalPrice && product.originalPrice > product.price && (
               <>
                 <span className="text-xl text-muted-foreground line-through mb-1">
-                  ${product.originalPrice.toFixed(2)}
+                  Rs. {product.originalPrice.toFixed(0)}
                 </span>
                 <span className="text-sm font-bold text-destructive bg-destructive/10 px-2 py-1 rounded-md mb-1.5">
                   Save {Math.round((1 - product.price / product.originalPrice) * 100)}%
@@ -147,7 +213,7 @@ export default function ProductDetail() {
             <p className="font-medium text-foreground mb-3">Quantity</p>
             <div className="flex items-center gap-6">
               <div className="flex items-center bg-muted/50 rounded-xl border border-border p-1">
-                <button 
+                <button
                   onClick={() => setQuantity(q => Math.max(1, q - 1))}
                   className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-background transition-colors text-foreground disabled:opacity-50"
                   disabled={quantity <= 1}
@@ -155,7 +221,7 @@ export default function ProductDetail() {
                   <Minus className="w-4 h-4" />
                 </button>
                 <span className="w-12 text-center font-semibold text-lg">{quantity}</span>
-                <button 
+                <button
                   onClick={() => setQuantity(q => Math.min(product.stock, q + 1))}
                   className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-background transition-colors text-foreground disabled:opacity-50"
                   disabled={quantity >= product.stock}
@@ -170,24 +236,24 @@ export default function ProductDetail() {
           </div>
 
           <div className="flex gap-4 mt-auto">
-            <button 
+            <button
               onClick={handleAddToCart}
-            disabled={isAdding || product.stock === 0}
-            className="flex-1 py-4 px-8 rounded-xl font-bold text-lg bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-          >
-            <ShoppingCart className="w-6 h-6" />
-            Add to Cart
-          </button>
+              disabled={isAdding || product.stock === 0}
+              className="flex-1 py-4 px-8 rounded-xl font-bold text-lg bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            >
+              <ShoppingCart className="w-6 h-6" />
+              Add to Cart
+            </button>
           </div>
 
           <div className="mt-8 grid grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border/50">
               <Truck className="w-6 h-6 text-primary" />
-              <div className="text-sm font-medium text-foreground">Free Delivery <br/><span className="text-muted-foreground font-normal">Over $50</span></div>
+              <div className="text-sm font-medium text-foreground">Free Delivery <br /><span className="text-muted-foreground font-normal">On all orders</span></div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border/50">
               <Shield className="w-6 h-6 text-primary" />
-              <div className="text-sm font-medium text-foreground">Premium Quality <br/><span className="text-muted-foreground font-normal">Guaranteed</span></div>
+              <div className="text-sm font-medium text-foreground">Premium Quality <br /><span className="text-muted-foreground font-normal">Guaranteed</span></div>
             </div>
           </div>
         </div>
@@ -197,7 +263,7 @@ export default function ProductDetail() {
       <div className="mt-20">
         <div className="flex border-b border-border gap-8">
           {['description', 'specifications', 'reviews'].map(tab => (
-            <button 
+            <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`pb-4 font-semibold text-lg transition-colors capitalize ${activeTab === tab ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
@@ -226,15 +292,108 @@ export default function ProductDetail() {
           {activeTab === 'reviews' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="flex items-center gap-4 mb-8">
-                <div className="text-5xl font-display font-bold text-foreground">{product.rating}</div>
+                <div className="text-5xl font-display font-bold text-foreground">{displayRating.toFixed(1)}</div>
                 <div>
                   <div className="flex text-amber-400 mb-1">
-                    {[...Array(5)].map((_, i) => <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'fill-current' : 'fill-muted text-muted'}`} />)}
+                    {[...Array(5)].map((_, i) => <Star key={i} className={`w-5 h-5 ${i < Math.round(displayRating) ? 'fill-current' : 'fill-muted text-muted'}`} />)}
                   </div>
-                  <div className="text-sm text-muted-foreground">Based on {product.reviewCount} reviews</div>
+                  <div className="text-sm text-muted-foreground">Based on {displayReviewCount} reviews</div>
                 </div>
               </div>
-              <p className="italic">"The softest tissues I've ever used. Highly recommend for allergy season!" - Verified Buyer</p>
+
+              {isLoadingReviews ? (
+                <div className="flex items-center gap-3 text-muted-foreground py-4">
+                  <Spinner className="w-4 h-4" />
+                  Loading reviews...
+                </div>
+              ) : reviews.length === 0 ? (
+                <p className="text-muted-foreground">
+                  No reviews yet. Be the first to review this product once your order is delivered!
+                </p>
+              ) : (
+                <div className="space-y-6 mb-10">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="border-b border-border/50 pb-6 last:border-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="flex text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-current' : 'fill-muted text-muted'}`} />
+                          ))}
+                        </div>
+                        <span className="text-sm font-semibold text-foreground not-italic">{review.customerName}</span>
+                        <span className="text-xs text-muted-foreground">{new Date(review.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <p className="not-italic">{review.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="not-italic bg-muted/30 border border-border/50 rounded-2xl p-6 max-w-xl">
+                <h3 className="text-lg font-semibold text-foreground mb-1">Write a Review</h3>
+                <p className="text-sm text-muted-foreground mb-5 flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  Reviews can only be submitted for orders that have already been delivered, using the same
+                  order ID and phone/email from checkout.
+                </p>
+                <form onSubmit={handleSubmitReview} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Order ID</label>
+                    <input
+                      value={reviewOrderNumber}
+                      onChange={(event) => setReviewOrderNumber(event.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      placeholder="ST-ABC123-XY9Z"
+                      disabled={createReviewMutation.isPending}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Phone Number or Email</label>
+                    <input
+                      value={reviewContact}
+                      onChange={(event) => setReviewContact(event.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      placeholder="03128513901 or name@example.com"
+                      disabled={createReviewMutation.isPending}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Your Rating</label>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setReviewRating(value)}
+                          disabled={createReviewMutation.isPending}
+                          className="p-1"
+                        >
+                          <Star className={`w-6 h-6 ${value <= reviewRating ? 'fill-amber-400 text-amber-400' : 'fill-transparent text-muted-foreground/50'}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Your Review</label>
+                    <textarea
+                      value={reviewComment}
+                      onChange={(event) => setReviewComment(event.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm resize-none"
+                      placeholder="Share your experience with this product..."
+                      disabled={createReviewMutation.isPending}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={createReviewMutation.isPending}
+                    className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {createReviewMutation.isPending ? <Spinner className="w-4 h-4" /> : null}
+                    Submit Review
+                  </button>
+                </form>
+              </div>
             </motion.div>
           )}
         </div>
