@@ -21,13 +21,19 @@ export default function Home() {
     >
       {/* Hero Section */}
       <section className="px-4 sm:px-6 lg:px-8 pt-6 pb-12">
-        <div className="relative w-full max-w-7xl mx-auto rounded-3xl overflow-hidden bg-background shadow-xl shadow-primary/5 border border-border/50 min-h-[600px] flex items-center">
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent z-10 w-2/3" />
-          <img
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-            className="absolute inset-0 w-full h-full object-cover object-center md:object-contain md:object-right"
-            alt="Premium Tissue Paper Background"
-          />
+        <div className="relative w-full max-w-7xl mx-auto rounded-3xl overflow-hidden bg-background shadow-xl shadow-primary/5 border border-border/50 flex flex-col md:flex-row md:items-center md:min-h-[600px]">
+          {/* Mobile hero background: soft blue gradient, no product image */}
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-50 via-blue-100 to-primary/20 md:hidden" />
+
+          {/* Desktop hero image: absolute background layer */}
+          <div className="hidden md:block absolute inset-0">
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent z-10 w-2/3" />
+            <img
+              src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+              className="absolute inset-0 w-full h-full object-contain object-right"
+              alt="Premium Tissue Paper Background"
+            />
+          </div>
 
           <div className="relative z-20 p-8 md:p-16 lg:p-24 max-w-2xl">
             <motion.div
@@ -105,7 +111,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -128,7 +134,17 @@ export default function Home() {
 
       {/* Quality Banner */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="rounded-3xl overflow-hidden relative bg-foreground text-background flex flex-col md:flex-row items-center">
+        <div className="rounded-3xl overflow-hidden relative bg-foreground text-background flex flex-col md:flex-row md:items-center">
+          {/* Mobile banner image: normal flow, contained aspect ratio */}
+          <div className="relative w-full aspect-[16/9] md:hidden">
+            <img
+              src={`${import.meta.env.BASE_URL}images/quality-texture.png`}
+              alt="Tissue Texture"
+              className="w-full h-full object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-foreground via-foreground/10 to-transparent" />
+          </div>
+
           <div className="p-10 md:p-16 lg:p-20 md:w-1/2 relative z-10">
             <div className="mb-6 inline-flex rounded-2xl border border-background/20 bg-background/95 p-3 shadow-lg">
               <BrandLogo imageClassName="h-14" />
@@ -141,7 +157,9 @@ export default function Home() {
               Discover Quality
             </Link>
           </div>
-          <div className="md:w-1/2 w-full h-64 md:h-auto absolute right-0 inset-y-0 opacity-40 md:opacity-100 mix-blend-overlay md:mix-blend-normal">
+
+          {/* Desktop banner image: absolute background layer */}
+          <div className="hidden md:block md:w-1/2 w-full h-64 md:h-auto absolute right-0 inset-y-0 opacity-40 md:opacity-100 mix-blend-overlay md:mix-blend-normal">
             <img
               src={`${import.meta.env.BASE_URL}images/quality-texture.png`}
               alt="Tissue Texture"

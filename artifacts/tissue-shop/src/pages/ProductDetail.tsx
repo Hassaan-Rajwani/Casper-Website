@@ -261,12 +261,12 @@ export default function ProductDetail() {
 
       {/* Tabs */}
       <div className="mt-20">
-        <div className="flex border-b border-border gap-8">
+        <div className="flex overflow-x-auto border-b border-border gap-4 sm:gap-8">
           {['description', 'specifications', 'reviews'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-4 font-semibold text-lg transition-colors capitalize ${activeTab === tab ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+              className={`shrink-0 pb-4 font-semibold text-sm sm:text-lg transition-colors capitalize ${activeTab === tab ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
             >
               {tab}
             </button>
