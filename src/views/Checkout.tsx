@@ -13,6 +13,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/spinner";
+import { sendOrderNotificationEmail } from "@/lib/order-email";
 
 interface CheckoutForm {
   customerName: string;
@@ -38,7 +39,7 @@ export default function Checkout() {
 
   const createOrderMutation = useCreateOrder({
     mutation: {
-      onSuccess: (order) => {
+      onSuccess: async (order) => {
         queryClient.setQueryData(getGetCartQueryKey(), {
           items: [],
           total: 0,
@@ -52,6 +53,16 @@ export default function Checkout() {
             phone: order.customerPhone,
           }),
         });
+
+        try {
+          await sendOrderNotificationEmail(order);
+        } catch {
+          toast({
+            title: "Order placed",
+            description: "Order saved, but email notification could not be sent.",
+          });
+        }
+
         router.push(`/order-confirmation/${order.orderNumber}`);
       },
       onError: () => {
