@@ -4,6 +4,8 @@
 dist
 tmp
 out-tsc
+.next
+out
 *.tsbuildinfo
 .expo
 .expo-shared
@@ -36,9 +38,9 @@ npm-debug.log
 yarn-error.log
 testem.log
 /typings
-# .env
-# .env.*
-# !.env.example
+.env
+.env.*
+!.env.example
 
 # System Files
 .DS_Store
