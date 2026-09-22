@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, RotateCcw, Truck, FileText, Phone, MapPin, Clock3 } from "lucide-react";
+import { CONTACT_EMAIL } from "@/lib/site-contact";
 
 const policySections = [
   {
@@ -64,7 +65,7 @@ const contactCards = [
     title: "Customer Support",
     icon: Phone,
     value: "03128513901",
-    detail: "caspertissue@gmail.com",
+    detail: CONTACT_EMAIL || "Contact email not configured",
   },
   {
     title: "Local Office Address",

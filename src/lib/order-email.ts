@@ -1,7 +1,5 @@
 import type { Order } from "@/lib/store-types";
-
-const ORDER_NOTIFICATION_EMAIL =
-  process.env.NEXT_PUBLIC_ORDER_NOTIFICATION_EMAIL ?? "caspertissue@gmail.com";
+import { CONTACT_EMAIL } from "@/lib/site-contact";
 
 function formatOrderItems(order: Order) {
   return order.items
@@ -13,10 +11,14 @@ function formatOrderItems(order: Order) {
 }
 
 export async function sendOrderNotificationEmail(order: Order) {
+  if (!CONTACT_EMAIL) {
+    return;
+  }
+
   const itemsText = formatOrderItems(order);
 
   const response = await fetch(
-    `https://formsubmit.co/ajax/${encodeURIComponent(ORDER_NOTIFICATION_EMAIL)}`,
+    `https://formsubmit.co/ajax/${encodeURIComponent(CONTACT_EMAIL)}`,
     {
       method: "POST",
       headers: {

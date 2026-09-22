@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Leaf, ShieldCheck, Truck, Droplets, ArrowRight, FileText, Phone, MapPin } from "lucide-react";
 import { useListProducts, useListCategories } from "@/lib/firebase-hooks";
+import { CONTACT_EMAIL } from "@/lib/site-contact";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
@@ -216,7 +217,9 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="font-semibold text-foreground">03128513901</p>
-                  <p className="text-sm text-muted-foreground">caspertissue@gmail.com</p>
+                  <p className="text-sm text-muted-foreground">
+                    {CONTACT_EMAIL || "Contact email not configured"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-4">

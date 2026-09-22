@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { CONTACT_EMAIL } from "@/lib/site-contact";
 
 export function Footer() {
   return (
@@ -71,7 +72,7 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-3 text-sm text-muted-foreground">
                 <Mail className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>caspertissue@gmail.com</span>
+                <span>{CONTACT_EMAIL || "Contact email not configured"}</span>
               </li>
               <li className="flex items-start gap-3 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />

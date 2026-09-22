@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircle, Package, Phone, Mail, ArrowRight } from "lucide-react";
 import { useGetOrder } from "@/lib/firebase-hooks";
+import { CONTACT_EMAIL } from "@/lib/site-contact";
 import { Spinner } from "@/components/ui/spinner";
 
 function getOrderStatusBadgeClass(status: string) {
@@ -165,7 +166,7 @@ export default function OrderConfirmation() {
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <Mail className="w-4 h-4 text-primary flex-shrink-0" />
-            <span>caspertissue@gmail.com</span>
+            <span>{CONTACT_EMAIL || "Contact email not configured"}</span>
           </div>
         </div>
       </div>
