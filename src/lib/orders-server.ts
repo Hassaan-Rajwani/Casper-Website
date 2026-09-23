@@ -1,3 +1,4 @@
+import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import type { Order } from "@/lib/store-types";
 import { getAdminFirestore } from "@/lib/firebase-admin";
 import { normalizeOrder, sortOrdersDescending } from "@/lib/order-normalize";
@@ -23,8 +24,8 @@ export async function listOrdersFromFirestore(): Promise<Order[]> {
   const db = await getAdminFirestore();
   const snapshot = await db.collection(ORDERS_COLLECTION).get();
 
-  const orders = snapshot.docs.map((document) =>
-    mapFirestoreOrder(document.id, document.data()),
+  const orders = snapshot.docs.map((document: QueryDocumentSnapshot) =>
+    mapFirestoreOrder(document.id, document.data() as Record<string, unknown>),
   );
 
   return sortOrdersDescending(orders);
@@ -80,7 +81,7 @@ export async function updateOrderStatusInFirestore(
   }
 
   const updatedOrder = normalizeOrder({
-    ...snapshot.data(),
+    ...(snapshot.data() as Record<string, unknown>),
     id,
     status,
   });
@@ -102,7 +103,7 @@ export async function updateOrderInFirestore(
   }
 
   const updatedOrder = normalizeOrder({
-    ...snapshot.data(),
+    ...(snapshot.data() as Record<string, unknown>),
     ...data,
     id,
   });
