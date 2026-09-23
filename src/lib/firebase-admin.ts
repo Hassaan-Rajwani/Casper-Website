@@ -1,10 +1,8 @@
 import type { App } from "firebase-admin/app";
-import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
 
 let adminApp: App | null = null;
 let adminFirestore: Firestore | null = null;
-let adminAuth: Auth | null = null;
 
 function parseServiceAccountJson() {
   const rawJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -62,14 +60,4 @@ export async function getAdminFirestore(): Promise<Firestore> {
   const { getFirestore } = await import("firebase-admin/firestore");
   adminFirestore = getFirestore(await getFirebaseAdminApp());
   return adminFirestore;
-}
-
-export async function getAdminAuth(): Promise<Auth> {
-  if (adminAuth) {
-    return adminAuth;
-  }
-
-  const { getAuth } = await import("firebase-admin/auth");
-  adminAuth = getAuth(await getFirebaseAdminApp());
-  return adminAuth;
 }

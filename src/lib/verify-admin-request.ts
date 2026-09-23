@@ -1,4 +1,3 @@
-import { getAdminAuth, isServerFirestoreConfigured } from "@/lib/firebase-admin";
 import { firebaseApiKey, isFirebaseConfigured } from "@/lib/firebase-config";
 
 export async function verifyAdminRequest(request: Request) {
@@ -7,11 +6,6 @@ export async function verifyAdminRequest(request: Request) {
 
   if (!token) {
     throw new Error("Admin authentication required");
-  }
-
-  if (isServerFirestoreConfigured()) {
-    const decoded = await (await getAdminAuth()).verifyIdToken(token);
-    return { email: decoded.email ?? "admin" };
   }
 
   if (!isFirebaseConfigured || !firebaseApiKey) {
