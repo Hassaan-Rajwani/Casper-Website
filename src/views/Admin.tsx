@@ -25,6 +25,7 @@ import {
   updateAdminProduct,
   updateAdminOrderStatus,
 } from "@/lib/firebase-store";
+import { sendOrderStatusUpdateEmail } from "@/lib/order-email";
 import type { AdminStats as Stats, Order, Product } from "@/lib/store-types";
 import {
   AlertDialog,
@@ -347,10 +348,19 @@ export default function Admin() {
   });
   const cancelOrderMutation = useMutation({
     mutationFn: (orderId: string) => updateAdminOrderStatus(orderId, "cancelled"),
-    onSuccess: () => {
+    onSuccess: async (updatedOrder) => {
       toast({ title: "Order cancelled" });
       invalidate();
       setOrderToCancel(null);
+
+      try {
+        await sendOrderStatusUpdateEmail(updatedOrder);
+      } catch {
+        toast({
+          title: "Order cancelled",
+          description: "Status updated, but the customer email could not be sent.",
+        });
+      }
     },
     onError: (error) =>
       toast({
@@ -362,11 +372,25 @@ export default function Admin() {
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: Order["status"] }) =>
       updateAdminOrderStatus(orderId, status),
-    onSuccess: (_, variables) => {
+    onSuccess: async (updatedOrder, variables) => {
       toast({
-        title: variables.status === "delivered" ? "Order delivered" : "Order confirmed",
+        title:
+          variables.status === "delivered"
+            ? "Order delivered"
+            : variables.status === "confirmed"
+              ? "Order confirmed"
+              : "Order status updated",
       });
       invalidate();
+
+      try {
+        await sendOrderStatusUpdateEmail(updatedOrder);
+      } catch {
+        toast({
+          title: "Status updated",
+          description: "Order saved, but the customer email could not be sent.",
+        });
+      }
     },
     onError: (error) =>
       toast({
