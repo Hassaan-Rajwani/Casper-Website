@@ -19,7 +19,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json(
         {
           error:
-            "Order storage is not configured on the server. Set FIREBASE_SERVICE_ACCOUNT_JSON in Netlify.",
+            "Order storage is not configured on the server. Set FIREBASE_SERVICE_ACCOUNT_JSON in Vercel environment variables.",
         },
         { status: 503 },
       );
