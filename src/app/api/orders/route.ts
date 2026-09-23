@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isServerFirestoreConfigured } from "@/lib/firebase-admin";
 import { normalizeOrder } from "@/lib/order-normalize";
+import { sendOrderNotificationEmailServer } from "@/lib/order-email-server";
 import { createOrderInFirestore } from "@/lib/orders-server";
 import type { Order } from "@/lib/store-types";
 
@@ -30,6 +31,13 @@ export async function POST(request: Request) {
     }
 
     const savedOrder = await createOrderInFirestore(order);
+
+    try {
+      await sendOrderNotificationEmailServer(savedOrder);
+    } catch (emailError) {
+      console.error("Order notification email failed:", emailError);
+    }
+
     return NextResponse.json({ order: savedOrder });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save order";

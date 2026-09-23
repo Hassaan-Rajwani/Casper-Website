@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isServerFirestoreConfigured } from "@/lib/firebase-admin";
+import { sendOrderStatusUpdateEmailServer } from "@/lib/order-email-server";
 import { updateOrderInFirestore, updateOrderStatusInFirestore } from "@/lib/orders-server";
 import { verifyAdminRequest } from "@/lib/verify-admin-request";
 import type { Order } from "@/lib/store-types";
@@ -32,6 +33,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     if (body.status) {
       const order = await updateOrderStatusInFirestore(id, body.status);
+
+      try {
+        await sendOrderStatusUpdateEmailServer(order);
+      } catch (emailError) {
+        console.error("Order status email failed:", emailError);
+      }
+
       return NextResponse.json({ order });
     }
 
