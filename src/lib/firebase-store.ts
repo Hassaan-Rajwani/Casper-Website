@@ -656,11 +656,35 @@ async function getCollectionDocument<T>(
   id: string,
   authRequired = false,
 ): Promise<T | null> {
+  if (!firestoreBaseUrl) {
+    return null;
+  }
+
   try {
-    const response = await firebaseFetch<Record<string, any>>(`/${collectionName}/${id}`, {
-      authRequired,
+    const headers = new Headers({ "Content-Type": "application/json" });
+    if (authRequired) {
+      const session = getAdminSession();
+      if (!session?.idToken) {
+        return null;
+      }
+      headers.set("Authorization", `Bearer ${session.idToken}`);
+    }
+
+    const response = await fetch(`${firestoreBaseUrl}/${collectionName}/${id}`, {
+      headers,
     });
-    return decodeDocument<T>(response);
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Firebase request failed");
+    }
+
+    const payload = (await response.json()) as Record<string, unknown>;
+    return decodeDocument<T>(payload);
   } catch {
     return null;
   }
@@ -698,6 +722,11 @@ async function getCartRecords(): Promise<CartRecord[]> {
 
   if (!canUseFirestore()) {
     return fallbackItems;
+  }
+
+  // Skip Firestore read for empty local carts — the document does not exist yet (avoids 404 noise).
+  if (fallbackItems.length === 0) {
+    return [];
   }
 
   try {

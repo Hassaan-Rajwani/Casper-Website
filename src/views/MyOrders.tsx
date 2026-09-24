@@ -142,8 +142,9 @@ export default function MyOrders() {
   const { data: trackedOrder, isLoading: isTrackingOrder } = useGetOrder(trackingOrderNumber);
   const {
     data: recentOrders = [],
-    isPending: isLoadingRecentOrders,
+    isLoading: isLoadingRecentOrders,
     isFetching: isRefreshingRecentOrders,
+    isError: isRecentOrdersError,
   } = useListCustomerOrders(recentFilters);
 
   const trackingMatchedOrder = useMemo(() => {
@@ -285,12 +286,7 @@ export default function MyOrders() {
             </p>
           </div>
 
-          {isLoadingRecentOrders && recentOrders.length === 0 ? (
-            <div className="rounded-2xl border border-border p-10 flex items-center justify-center gap-3 text-muted-foreground">
-              <Spinner className="w-5 h-5" />
-              Loading your recent orders...
-            </div>
-          ) : !hasSavedContact ? (
+          {!hasSavedContact ? (
             <div className="rounded-2xl border border-border p-10 text-center">
               <PackageSearch className="w-12 h-12 text-primary/70 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No recent order history yet</h3>
@@ -298,12 +294,19 @@ export default function MyOrders() {
                 Place an order once and this browser will remember your last checkout contact for quick tracking.
               </p>
             </div>
+          ) : isLoadingRecentOrders ? (
+            <div className="rounded-2xl border border-border p-10 flex items-center justify-center gap-3 text-muted-foreground">
+              <Spinner className="w-5 h-5" />
+              Loading your recent orders...
+            </div>
           ) : recentOrders.length === 0 ? (
             <div className="rounded-2xl border border-border p-10 text-center">
               <ShoppingBag className="w-12 h-12 text-primary/70 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No orders found</h3>
               <p className="text-muted-foreground mb-6">
-                No orders were found for your most recently used phone number or email on this device.
+                {isRecentOrdersError
+                  ? "We could not load your recent orders right now. Try tracking with your order ID above."
+                  : "No orders were found for your most recently used phone number or email on this device."}
               </p>
               <Link
                 href="/products"
