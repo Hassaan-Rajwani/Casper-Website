@@ -25,6 +25,7 @@ import {
   updateAdminProduct,
   updateAdminOrderStatus,
 } from "@/lib/firebase-store";
+import { compressImageForFirestore, isFirestoreSafeImageUrl } from "@/lib/compress-image";
 import type { AdminStats as Stats, Order, Product } from "@/lib/store-types";
 import {
   AlertDialog,
@@ -462,18 +463,25 @@ export default function Admin() {
       return;
     }
 
+    if (file.size > 12 * 1024 * 1024) {
+      toast({
+        title: "Image too large",
+        description: "Please use a photo under 12 MB, or paste an external image URL.",
+        variant: "destructive",
+      });
+      event.target.value = "";
+      return;
+    }
+
     setIsReadingImage(true);
 
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result ?? ""));
-        reader.onerror = () => reject(new Error("Image upload failed"));
-        reader.readAsDataURL(file);
-      });
-
+      const dataUrl = await compressImageForFirestore(file);
       setForm((current) => ({ ...current, imageUrl: dataUrl }));
-      toast({ title: "Image uploaded", description: file.name });
+      toast({
+        title: "Image ready",
+        description: `${file.name} — compressed for Firestore (no Storage bucket needed).`,
+      });
     } catch (error) {
       toast({
         title: "Upload failed",
@@ -488,6 +496,17 @@ export default function Admin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isFirestoreSafeImageUrl(form.imageUrl)) {
+      toast({
+        title: "Image too large for database",
+        description:
+          "Re-upload the file so we can compress it, or paste a direct https:// image link instead of raw base64.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const data = {
       name: form.name, description: form.description, price: parseFloat(form.price),
       originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : null,
@@ -1538,7 +1557,7 @@ export default function Admin() {
                           <div>
                             <p className="text-sm font-semibold text-foreground">Upload or paste image</p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              Paste an image URL or upload a file from your device.
+                              Paste an https:// image link, or upload — we compress it for Firestore (no Storage bucket).
                             </p>
                           </div>
                           {form.imageUrl ? (
@@ -1556,12 +1575,12 @@ export default function Admin() {
                           disabled={createMutation.isPending || updateMutation.isPending}
                           onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
                           className="mt-4 w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-primary text-sm"
-                          placeholder="https://... or uploaded image data"
+                          placeholder="https://... or upload a file below"
                         />
                         <label className="mt-3 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background px-4 py-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5">
                           <Upload className="h-5 w-5 text-primary" />
                           <span className="mt-3 text-sm font-semibold text-foreground">
-                            {isReadingImage ? "Uploading image..." : "Click to upload image"}
+                            {isReadingImage ? "Compressing image..." : "Click to upload image"}
                           </span>
                           <span className="mt-1 text-xs text-muted-foreground">
                             JPG, PNG, WebP supported
