@@ -504,9 +504,16 @@ export default function Admin() {
       return;
     }
 
+    const price = parseFloat(form.price);
+    const parsedOriginal = form.originalPrice ? parseFloat(form.originalPrice) : null;
+    const originalPrice =
+      parsedOriginal != null && Number.isFinite(parsedOriginal) && parsedOriginal > price
+        ? parsedOriginal
+        : null;
+
     const data = {
-      name: form.name, description: form.description, price: parseFloat(form.price),
-      originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : null,
+      name: form.name, description: form.description, price,
+      originalPrice,
       imageUrl: form.imageUrl, category: form.category, stock: parseInt(form.stock),
       rating: parseFloat(form.rating), reviewCount: parseInt(form.reviewCount),
       isNew: form.isNew, isBestseller: form.isBestseller,
@@ -800,7 +807,11 @@ export default function Admin() {
                         </td>
                         <td className="px-4 py-3 font-semibold text-foreground">
                           Rs. {product.price}
-                          {product.originalPrice && <span className="text-xs text-muted-foreground line-through ml-1">Rs. {product.originalPrice}</span>}
+                          {product.originalPrice != null && product.originalPrice > product.price && (
+                            <span className="text-xs text-muted-foreground line-through ml-1">
+                              Rs. {product.originalPrice}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           <span className={`text-xs font-medium ${product.stock < 20 ? "text-destructive" : "text-green-600"}`}>

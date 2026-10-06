@@ -106,7 +106,7 @@ function ProductCardComponent({ product }: { product: Product }) {
             <span className="font-bold text-base sm:text-xl text-foreground truncate">
               Rs. {product.price.toFixed(0)}
             </span>
-            {product.originalPrice && (
+            {product.originalPrice != null && product.originalPrice > product.price && (
               <span className="text-[11px] sm:text-xs text-muted-foreground line-through truncate">
                 Rs. {product.originalPrice.toFixed(0)}
               </span>
