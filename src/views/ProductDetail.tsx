@@ -157,7 +157,7 @@ export default function ProductDetail() {
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Images */}
         <div className="w-full lg:w-1/2">
-          <div className="bg-muted/30 rounded-3xl overflow-hidden aspect-square border border-border relative">
+          <div className="bg-muted/20 rounded-3xl overflow-hidden aspect-square border border-border relative p-6 sm:p-10">
             {product.isNew && (
               <span className="absolute top-6 left-6 bg-accent text-accent-foreground text-sm font-bold px-4 py-1.5 rounded-full z-10 shadow-sm">
                 NEW
@@ -166,7 +166,7 @@ export default function ProductDetail() {
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="w-full h-full object-cover object-center mix-blend-multiply"
+              className="w-full h-full object-contain object-center"
             />
           </div>
         </div>

@@ -61,7 +61,10 @@ function ProductCardComponent({ product }: { product: Product }) {
       whileHover={{ y: -4 }}
       className="group bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col h-full"
     >
-      <Link href={`/products/${product.id}`} className="relative block overflow-hidden aspect-square bg-muted/30">
+      <Link
+        href={`/products/${product.id}`}
+        className="relative block overflow-hidden aspect-square bg-muted/20 p-3 sm:p-5"
+      >
         <div className="absolute left-2 bottom-2 sm:left-4 sm:bottom-4 z-10 rounded-lg sm:rounded-xl bg-background/95 p-1 sm:p-1.5 shadow-md">
           <BrandLogo imageClassName="h-5 sm:h-8" />
         </div>
@@ -78,7 +81,8 @@ function ProductCardComponent({ product }: { product: Product }) {
         <ProductImage
           src={product.imageUrl}
           alt={product.name}
-          className="group-hover:scale-105 transition-transform duration-500 mix-blend-multiply"
+          fit="contain"
+          className="group-hover:scale-[1.03] transition-transform duration-500"
         />
       </Link>
 

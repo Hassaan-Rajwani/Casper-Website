@@ -9,6 +9,7 @@ type ProductImageProps = {
   className?: string;
   priority?: boolean;
   sizes?: string;
+  fit?: "contain" | "cover";
 };
 
 function canOptimizeRemoteImage(src: string) {
@@ -33,7 +34,10 @@ export function ProductImage({
   className,
   priority = false,
   sizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px",
+  fit = "contain",
 }: ProductImageProps) {
+  const fitClass = fit === "cover" ? "object-cover" : "object-contain";
+
   if (!canOptimizeRemoteImage(src)) {
     return (
       <img
@@ -41,7 +45,7 @@ export function ProductImage({
         alt={alt}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
-        className={cn("absolute inset-0 h-full w-full object-cover object-center", className)}
+        className={cn("absolute inset-0 h-full w-full object-center", fitClass, className)}
       />
     );
   }
@@ -53,7 +57,7 @@ export function ProductImage({
       fill
       priority={priority}
       sizes={sizes}
-      className={cn("object-cover object-center", className)}
+      className={cn("object-center", fitClass, className)}
     />
   );
 }

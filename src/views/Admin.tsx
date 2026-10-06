@@ -478,10 +478,7 @@ export default function Admin() {
     try {
       const dataUrl = await compressImageForFirestore(file);
       setForm((current) => ({ ...current, imageUrl: dataUrl }));
-      toast({
-        title: "Image ready",
-        description: `${file.name} — compressed for Firestore (no Storage bucket needed).`,
-      });
+      toast({ title: "Image uploaded" });
     } catch (error) {
       toast({
         title: "Upload failed",
